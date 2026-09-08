@@ -1,6 +1,6 @@
 {
-  "name": "IDX Core Stock Database",
-  "description": "Dashboard database saham core Indonesia dengan sinkronisasi Google Apps Script, analisis valuasi, margin of safety, dan siap deploy ke Vercel.",
+  "name": "IDX Quant Analyst - Saham Core",
+  "description": "Platform analisis kuantitatif saham IDX dengan Screener 155 emiten liquid, Stockpick teknikal & bandarmologi, dan Role-Based Access Control (RBAC).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
