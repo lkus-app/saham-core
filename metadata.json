@@ -1,0 +1,6 @@
+{
+  "name": "IDX Core Stock Database",
+  "description": "Dashboard database saham core Indonesia dengan sinkronisasi Google Apps Script, analisis valuasi, margin of safety, dan siap deploy ke Vercel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
