@@ -117,6 +117,80 @@ function marketDataPlugin(): Plugin {
           res.end(JSON.stringify({ status: 'error', message: String(err) }));
         }
       });
+
+      server.middlewares.use('/api/apps-script', async (req, res) => {
+        const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxp569_Wia0XPhzP81dSCcUte5kaK0nW2yM6GbpXYh5EeYsqwr-SiK_50M_qBeGUK1FfQ/exec';
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          res.end();
+          return;
+        }
+
+        try {
+          const urlObj = new URL(req.url || '', `http://${req.headers.host}`);
+          const targetUrl = urlObj.searchParams.get('url') || DEFAULT_API_URL;
+
+          if (req.method === 'GET') {
+            const destUrl = new URL(targetUrl);
+            urlObj.searchParams.forEach((val, key) => {
+              if (key !== 'url') {
+                destUrl.searchParams.set(key, val);
+              }
+            });
+
+            const response = await fetch(destUrl.toString(), {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              },
+              redirect: 'follow',
+            });
+
+            const text = await response.text();
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.statusCode = response.status;
+            res.end(text);
+            return;
+          }
+
+          if (req.method === 'POST') {
+            let rawBody = '';
+            for await (const chunk of req) {
+              rawBody += chunk;
+            }
+
+            const response = await fetch(targetUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              },
+              body: rawBody,
+              redirect: 'follow',
+            });
+
+            const text = await response.text();
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.statusCode = response.status;
+            res.end(text);
+            return;
+          }
+
+          res.statusCode = 405;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ success: false, message: 'Method not allowed' }));
+        } catch (err) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ success: false, message: String(err) }));
+        }
+      });
     },
   };
 }

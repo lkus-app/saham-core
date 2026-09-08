@@ -52,14 +52,31 @@ export interface QuantStock {
   ticker: string;
   name?: string;
   close: number;
+  prev_close?: number;
   change_pct: number;
   value_idr: number;
   rsi_14: number;
+  ma20?: number;
+  ma50?: number;
+  ma200?: number;
   ma_status: string;
-  strategy: string; // 'ALL' | 'SCALPING' | 'SWING' | 'BUY_ON_WEAKNESS' | 'GOLDEN_CROSS' | 'DIVIDEND_PLAY'
+  macd?: number;
+  macd_signal?: number;
+  support_lvl?: number;
+  dividend_yield?: number;
+  strategy: string; // 'ALL' | 'OVERSOLD' | 'BULLISH' | 'SCALPING' | 'SWING' | 'BUY_ON_WEAKNESS' | 'GOLDEN_CROSS' | 'DIVIDEND_PLAY'
   high?: number;
   low?: number;
   volume?: number;
+}
+
+export interface UserProfile {
+  email: string;
+  name?: string;
+  role?: string;
+  isVip?: boolean;
+  loginTime?: string;
+  token?: string;
 }
 
 // User's Google Script Stockpick item

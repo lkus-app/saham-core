@@ -12,9 +12,11 @@ import {
   ExternalLink,
   Layers,
   Sparkles,
-  Award
+  Award,
+  Lock,
+  UserCheck
 } from 'lucide-react';
-import { GoogleScriptConfig, AppSection } from '../types';
+import { GoogleScriptConfig, AppSection, UserProfile } from '../types';
 
 interface NavbarProps {
   config: GoogleScriptConfig;
@@ -28,6 +30,8 @@ interface NavbarProps {
   onExportJSON: () => void;
   onSyncGoogleScript: () => void;
   isSyncing: boolean;
+  currentUser?: UserProfile | null;
+  onOpenLoginModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -42,6 +46,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onExportJSON,
   onSyncGoogleScript,
   isSyncing,
+  currentUser,
+  onOpenLoginModal,
 }) => {
   const isConnected = Boolean(config.webAppUrl && config.webAppUrl.trim());
 
@@ -152,6 +158,28 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Rocket className="h-3.5 w-3.5 text-indigo-400" />
               <span className="hidden sm:inline">Deploy Vercel</span>
             </button>
+
+            {/* Login / VIP Profile Button */}
+            {currentUser ? (
+              <button
+                onClick={onOpenLoginModal}
+                className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/60 px-2.5 sm:px-3 py-1.5 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-900/60 transition shadow-sm shadow-emerald-500/10"
+                title="Status Akun VIP"
+              >
+                <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="truncate max-w-[90px]">{currentUser.name || currentUser.email.split('@')[0]}</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              </button>
+            ) : (
+              <button
+                onClick={onOpenLoginModal}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-2.5 sm:px-3 py-1.5 text-xs font-mono font-medium text-slate-300 hover:bg-slate-800 transition"
+                title="Login Akun Member / VIP"
+              >
+                <Lock className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Login VIP</span>
+              </button>
+            )}
 
             {/* Add Stock button (for Fundamental mode) */}
             {activeSection === 'fundamental' && (

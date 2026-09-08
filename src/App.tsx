@@ -6,7 +6,8 @@ import {
   ViewMode, 
   AppSection, 
   QuantStock, 
-  StockpickItem 
+  StockpickItem,
+  UserProfile 
 } from './types';
 import { DEFAULT_STOCKS } from './data/defaultStocks';
 import { 
@@ -25,7 +26,9 @@ import {
   DEFAULT_SHEET_ID,
   DEFAULT_SHEET_GID,
   exportToCSV, 
-  exportToJSON 
+  exportToJSON,
+  loadScreener,
+  getUserSession 
 } from './services/googleScriptService';
 import {
   fetchLiveMarketData,
@@ -39,6 +42,7 @@ import { Navbar } from './components/Navbar';
 import { QuantScreenerView } from './components/QuantScreenerView';
 import { StockpickView } from './components/StockpickView';
 import { TechnicalChartModal } from './components/TechnicalChartModal';
+import { LoginModal } from './components/LoginModal';
 import { StatCards } from './components/StatCards';
 import { FilterBar } from './components/FilterBar';
 import { StockTable } from './components/StockTable';
@@ -76,6 +80,10 @@ export default function App() {
   const [selectedStock, setSelectedStock] = useState<CoreStock | null>(null);
   const [stockToEdit, setStockToEdit] = useState<CoreStock | null>(null);
 
+  // User Auth & Session state
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getUserSession());
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
   // Modals
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isGoogleScriptModalOpen, setIsGoogleScriptModalOpen] = useState(false);
@@ -101,7 +109,7 @@ export default function App() {
     }, 4000);
   };
 
-  // Automatically fetch live market quotes on launch
+  // Automatically fetch live market quotes and load screener data from Google Apps Script on launch
   useEffect(() => {
     let isMounted = true;
     const loadInitialLiveQuotes = async () => {
@@ -120,7 +128,21 @@ export default function App() {
       }
     };
 
+    // Auto-load 155 stocks from Google Apps Script Web App screener
+    const loadInitialScreener = async () => {
+      try {
+        const res = await loadScreener('ALL');
+        if (res.success && res.data && res.data.length > 0 && isMounted) {
+          setQuantStocks(res.data);
+          console.log(`[Google Apps Script] Berhasil memuat ${res.data.length} saham screener.`);
+        }
+      } catch (e) {
+        console.warn('Gagal memuat screener awal dari Apps Script:', e);
+      }
+    };
+
     loadInitialLiveQuotes();
+    loadInitialScreener();
 
     return () => {
       isMounted = false;
@@ -378,6 +400,8 @@ export default function App() {
         }}
         onSyncGoogleScript={handleSyncPull}
         isSyncing={isSyncing}
+        currentUser={currentUser}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -430,6 +454,7 @@ export default function App() {
             onRefreshLiveQuotes={handleRefreshLiveQuotes}
             isRefreshingLive={isRefreshingLive}
             lastLiveUpdate={lastLiveUpdate}
+            onUpdateStocks={(st) => setQuantStocks(st)}
           />
         )}
 
@@ -558,6 +583,21 @@ export default function App() {
       <ValuationCalculatorModal
         isOpen={isCalculatorModalOpen}
         onClose={() => setIsCalculatorModalOpen(false)}
+      />
+
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        currentUser={currentUser}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          showToast(`Selamat datang kembali, ${user.name || user.email}! Akses VIP Aktif.`);
+        }}
+        onLogout={() => {
+          setCurrentUser(null);
+          showToast('Anda telah logout.', 'info');
+        }}
+        webAppUrl={config.webAppUrl}
       />
     </div>
   );

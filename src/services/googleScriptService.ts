@@ -1,4 +1,4 @@
-import { CoreStock, GoogleScriptConfig } from '../types';
+import { CoreStock, GoogleScriptConfig, QuantStock, UserProfile } from '../types';
 import { DEFAULT_STOCKS } from '../data/defaultStocks';
 
 const STORAGE_KEY_STOCKS = 'idx_core_stocks_data_v1';
@@ -886,3 +886,299 @@ export function exportToJSON(stocks: CoreStock[]): void {
   link.click();
   document.body.removeChild(link);
 }
+
+// Map of popular Indonesian tickers to company names
+const IDX_TICKER_NAMES: Record<string, string> = {
+  BBCA: 'Bank Central Asia Tbk',
+  BBRI: 'Bank Rakyat Indonesia Tbk',
+  BMRI: 'Bank Mandiri Tbk',
+  BBNI: 'Bank Negara Indonesia Tbk',
+  BBTN: 'Bank Tabungan Negara Tbk',
+  BDMN: 'Bank Danamon Indonesia Tbk',
+  BRIS: 'Bank Syariah Indonesia Tbk',
+  MEGA: 'Bank Mega Tbk',
+  BJBR: 'Bank BJB Tbk',
+  BJTM: 'Bank Jatim Tbk',
+  NISP: 'Bank OCBC NISP Tbk',
+  ASII: 'Astra International Tbk',
+  TLKM: 'Telkom Indonesia Tbk',
+  ISAT: 'Indosat Ooredoo Hutchison Tbk',
+  EXCL: 'XL Axiata Tbk',
+  ICBP: 'Indofood CBP Sukses Makmur Tbk',
+  INDF: 'Indofood Sukses Makmur Tbk',
+  UNVR: 'Unilever Indonesia Tbk',
+  MYOR: 'Mayora Indah Tbk',
+  KLBF: 'Kalbe Farma Tbk',
+  SIDO: 'Industri Jamu Sido Muncul Tbk',
+  ADRO: 'Adaro Energy Indonesia Tbk',
+  PTBA: 'Bukit Asam Tbk',
+  ITMG: 'Indo Tambangraya Megah Tbk',
+  PGAS: 'Perusahaan Gas Negara Tbk',
+  MEDC: 'Medco Energi Internasional Tbk',
+  AKRA: 'AKR Corporindo Tbk',
+  AMMN: 'Amman Mineral Internasional Tbk',
+  BREN: 'Barito Renewables Energy Tbk',
+  BRPT: 'Barito Pacific Tbk',
+  TPIA: 'Chandra Asri Pacific Tbk',
+  ANTM: 'Aneka Tambang Tbk',
+  INCO: 'Vale Indonesia Tbk',
+  MDKA: 'Merdeka Copper Gold Tbk',
+  MBMA: 'Merdeka Battery Materials Tbk',
+  SMGR: 'Semen Indonesia Tbk',
+  INTP: 'Indocement Tunggal Prakarsa Tbk',
+  ACES: 'Aspirasi Hidup Indonesia Tbk',
+  MAPI: 'Mitra Adiperkasa Tbk',
+  MAPA: 'MAP Aktif Adiperkasa Tbk',
+  ERAA: 'Erajaya Swasembada Tbk',
+  CPIN: 'Charoen Pokphand Indonesia Tbk',
+  JPFA: 'Japfa Comfeed Indonesia Tbk',
+  GOTO: 'GoTo Gojek Tokopedia Tbk',
+  BUKA: 'Bukalapak.com Tbk',
+  MTEL: 'Dayamitra Telekomunikasi Tbk',
+  TOWR: 'Sarana Menara Nusantara Tbk',
+  TBIG: 'Tower Bersama Infrastructure Tbk',
+  PWON: 'Pakuwon Jati Tbk',
+  BSDE: 'Bumi Serpong Damai Tbk',
+  CTRA: 'Ciputra Development Tbk',
+  SMRA: 'Summarecon Agung Tbk',
+  DMAS: 'Puradelta Lestari Tbk',
+  SSIA: 'Surya Semesta Internusa Tbk',
+  ARNA: 'Arwana Citramulia Tbk',
+  SMDR: 'Samudera Indonesia Tbk',
+  TMAS: 'Temas Tbk',
+  BIRD: 'Blue Bird Tbk',
+  ASSA: 'Adi Sarana Armada Tbk',
+  GIAA: 'Garuda Indonesia Tbk',
+  UNTR: 'United Tractors Tbk',
+  HEXA: 'Hexindo Adiperkasa Tbk',
+  MARK: 'Mark Dynamics Indonesia Tbk',
+  WSKT: 'Waskita Karya Tbk',
+  PTPP: 'PP (Persero) Tbk',
+  WIKA: 'Wijaya Karya Tbk',
+  ADHI: 'Adhi Karya Tbk',
+};
+
+export const API_URL = USER_DEPLOYED_URL;
+
+/**
+ * 1. Ambil data Screener dari Google Apps Script Web App
+ * Memanggil `${API_URL}?action=screener&filter=${filter}`
+ */
+export async function loadScreener(
+  filter = 'ALL',
+  customApiUrl?: string
+): Promise<{ success: boolean; data: QuantStock[]; message?: string }> {
+  const targetUrl = (customApiUrl && customApiUrl.trim()) || getGoogleScriptConfig().webAppUrl || USER_DEPLOYED_URL;
+
+  // Try direct fetch first
+  try {
+    const directUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}action=screener&filter=${encodeURIComponent(filter)}`;
+    const res = await fetch(directUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && (json.success || Array.isArray(json.data) || Array.isArray(json))) {
+        const rawList = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
+        const stocks = transformRawScreenerData(rawList, filter);
+        return { success: true, data: stocks };
+      }
+    }
+  } catch (directErr) {
+    // If direct fetch fails (e.g. CORS or sandbox redirect), fall back to proxy
+    console.info('Direct fetch to Apps Script failed, using proxy fallback:', directErr);
+  }
+
+  // Proxy fallback
+  try {
+    const proxyUrl = `/api/apps-script?action=screener&filter=${encodeURIComponent(filter)}&url=${encodeURIComponent(targetUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) {
+      throw new Error(`Proxy error HTTP ${res.status}: ${res.statusText}`);
+    }
+    const json = await res.json();
+    if (json && (json.success || Array.isArray(json.data) || Array.isArray(json))) {
+      const rawList = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
+      const stocks = transformRawScreenerData(rawList, filter);
+      return { success: true, data: stocks };
+    }
+    throw new Error(json.message || 'Respon dari Apps Script tidak valid.');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, data: [], message: msg };
+  }
+}
+
+/**
+ * Helper to normalize raw screener data items
+ */
+function transformRawScreenerData(rawList: Record<string, any>[], activeFilter: string): QuantStock[] {
+  return rawList.map((item, idx) => {
+    const ticker = String(item.ticker || item.code || item.saham || item.kode || `IDX${idx + 1}`)
+      .trim()
+      .toUpperCase()
+      .replace(/\.JK$/i, '')
+      .replace(/^IDX:/i, '');
+
+    const close = Number(item.close || item.harga || item.price || item.last || 0);
+    const prevClose = Number(item.prev_close || item.previousClose || close);
+    const changePct = typeof item.change_pct === 'number'
+      ? item.change_pct
+      : prevClose > 0
+      ? parseFloat((((close - prevClose) / prevClose) * 100).toFixed(2))
+      : 0;
+
+    const valueIdr = Number(item.value_idr || item.value || item.transaksi || (close * (item.volume || 1000000)));
+    const volume = Number(item.volume || 0);
+    const rsi = Number(item.rsi_14 ?? item.rsi ?? 50);
+
+    const ma20 = item.ma20 ? Number(item.ma20) : undefined;
+    const ma50 = item.ma50 ? Number(item.ma50) : undefined;
+    const ma200 = item.ma200 ? Number(item.ma200) : undefined;
+    const macd = item.macd !== undefined ? Number(item.macd) : undefined;
+    const macdSignal = item.macd_signal !== undefined ? Number(item.macd_signal) : undefined;
+    const supportLvl = item.support_lvl !== undefined ? Number(item.support_lvl) : undefined;
+    const dividendYield = item.dividend_yield !== undefined ? Number(item.dividend_yield) : 0;
+
+    // Calculate MA Status
+    let maStatus = 'Netral / Sideways';
+    if (ma20 && ma50 && ma200) {
+      if (close > ma20 && ma20 > ma50 && ma50 > ma200) {
+        maStatus = 'Bullish Strong (> MA20, 50, 200)';
+      } else if (close > ma20 && close > ma50) {
+        maStatus = 'Uptrend (> MA20 & MA50)';
+      } else if (close < ma20 && close < ma50 && close < ma200) {
+        maStatus = 'Bearish (< MA20, 50, 200)';
+      } else if (close < ma20 && close >= ma200) {
+        maStatus = 'Pullback Support MA200';
+      }
+    } else if (close > prevClose) {
+      maStatus = 'Positive Momentum';
+    }
+
+    // Determine strategy category
+    let strategy = 'ALL';
+    if (rsi < 42 || (supportLvl && close <= supportLvl * 1.02)) {
+      strategy = 'BUY_ON_WEAKNESS';
+    } else if (macd !== undefined && macdSignal !== undefined && macd > macdSignal && changePct > 1.2) {
+      strategy = 'GOLDEN_CROSS';
+    } else if (changePct > 2.0 && volume > 20000000) {
+      strategy = 'SCALPING';
+    } else if (dividendYield >= 2.5) {
+      strategy = 'DIVIDEND_PLAY';
+    } else if (close > (ma20 || close)) {
+      strategy = 'SWING';
+    }
+
+    const companyName = item.name || IDX_TICKER_NAMES[ticker] || `${ticker} Tbk`;
+
+    return {
+      ticker,
+      name: companyName,
+      close,
+      prev_close: prevClose,
+      change_pct: changePct,
+      value_idr: valueIdr,
+      rsi_14: rsi,
+      ma20,
+      ma50,
+      ma200,
+      ma_status: maStatus,
+      macd,
+      macd_signal: macdSignal,
+      support_lvl: supportLvl,
+      dividend_yield: dividendYield,
+      strategy,
+      volume,
+      high: item.high || close * 1.02,
+      low: item.low || close * 0.98,
+    };
+  });
+}
+
+/**
+ * 2. Login User ke Google Apps Script Web App
+ * Mengirim POST { action: "login", email: email, password: password }
+ */
+export async function userLogin(
+  email: string,
+  password: string,
+  customApiUrl?: string
+): Promise<{ success: boolean; user?: any; message?: string }> {
+  const targetUrl = (customApiUrl && customApiUrl.trim()) || getGoogleScriptConfig().webAppUrl || USER_DEPLOYED_URL;
+
+  const payload = {
+    action: 'login',
+    email: email.trim(),
+    password: password.trim(),
+  };
+
+  // Try direct fetch first
+  try {
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json;
+    }
+  } catch (directErr) {
+    console.info('Direct login to Apps Script failed, trying proxy fallback:', directErr);
+  }
+
+  // Fallback to proxy
+  try {
+    const res = await fetch('/api/apps-script', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `Gagal menghubungkan ke server login: ${msg}` };
+  }
+}
+
+// User Session Management
+const STORAGE_KEY_USER = 'idx_user_session_v1';
+
+export function saveUserSession(user: { email: string; name?: string; role?: string; isVip?: boolean }): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+  } catch (e) {
+    console.warn('Failed to save user session', e);
+  }
+}
+
+export function getUserSession(): { email: string; name?: string; role?: string; isVip?: boolean } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_USER);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearUserSession(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY_USER);
+  } catch (e) {
+    console.warn('Failed to clear user session', e);
+  }
+}
+
