@@ -1,6 +1,6 @@
 {
   "name": "IDX Quant Analyst - Saham Core",
-  "description": "Platform analisis kuantitatif saham IDX dengan Screener 155 emiten liquid, Stockpick teknikal & bandarmologi, dan Role-Based Access Control (RBAC).",
+  "description": "Terminal analisis kuantitatif saham IDX dengan screener 220+ emiten, custom watchlist saham, 5-factor confluence scoring, dan Role-Based Access Control (RBAC).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
