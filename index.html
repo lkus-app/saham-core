@@ -1083,6 +1083,13 @@
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
       restoreSession();
+
+      // AUTO-UPDATE HARGA REALTIME SETIAP 2,5 MENIT
+      setInterval(() => {
+        if (currentUser && !document.getElementById('dashboard-view').classList.contains('hidden')) {
+          fetchScreener(currentFilter);
+        }
+      }, 150000); // 150.000 ms = 2,5 menit
     });
 
     /**
