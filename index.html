@@ -1043,18 +1043,30 @@
 
       <!-- Modal Tab View 3: IDX News -->
       <div id="modal-view-news" class="hidden p-3 sm:p-5 overflow-y-auto min-h-0 space-y-4 flex-1 overscroll-contain">
-        <div class="flex items-center justify-between p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d] font-mono text-xs">
-          <div class="flex items-center gap-2">
+        <div class="flex items-center justify-between p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d] font-mono text-xs flex-wrap gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <i data-lucide="radio" class="w-4 h-4 text-cyan-400"></i>
-            <span class="text-white font-bold">KETERBUKAAN INFORMASI RESMI IDX:</span>
+            <span class="text-white font-bold">KETERBUKAAN &amp; BERITA LIVE BEI:</span>
             <span id="news-ticker-badge" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">BBCA</span>
+            <span id="news-count-badge" class="px-1.5 py-0.5 rounded bg-[#1a1d26] border border-[#2a2e3d] text-[10px] text-slate-400">0 Berita</span>
           </div>
-          <span class="text-[10px] text-slate-500">Live Disclosures &amp; Corporate Actions</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-500 hidden sm:inline">Real-time Media &amp; Keterbukaan</span>
+            <button
+              id="btn-refresh-news"
+              onclick="if (currentSelectedStock) fetchIdxNews(currentSelectedStock.ticker, true)"
+              title="Perbarui Berita Emiten Ini"
+              class="flex items-center gap-1 px-2.5 py-1 rounded bg-[#161920] border border-[#2a2e3d] hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 text-[11px] transition"
+            >
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         <div id="news-loading" class="hidden py-10 text-center font-mono text-xs text-slate-500">
           <i data-lucide="loader" class="w-5 h-5 mx-auto animate-spin mb-2 text-cyan-400"></i>
-          <span>Mengambil pengumuman bursa terkini...</span>
+          <span>Mengambil berita &amp; keterbukaan informasi terkini untuk emiten ini...</span>
         </div>
 
         <div id="news-list" class="space-y-3">

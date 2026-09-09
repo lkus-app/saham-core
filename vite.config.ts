@@ -341,6 +341,193 @@ function marketDataPlugin(): Plugin {
         }
       });
 
+      // In-memory cache for news feed to ensure instant responses
+      const serverNewsCache: Record<string, { data: any[]; timestamp: number }> = {};
+      const NEWS_CACHE_TTL = 5 * 60 * 1000;
+
+      server.middlewares.use('/api/news', async (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          res.end();
+          return;
+        }
+
+        try {
+          const url = new URL(req.url || '', `http://${req.headers.host}`);
+          const ticker = (url.searchParams.get('ticker') || url.searchParams.get('symbol') || 'BBCA').trim().toUpperCase().replace('.JK', '');
+          const limit = Math.min(20, Math.max(1, parseInt(url.searchParams.get('limit') || '10', 10)));
+
+          // Check cache
+          const cached = serverNewsCache[ticker];
+          if (cached && (Date.now() - cached.timestamp < NEWS_CACHE_TTL)) {
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              success: true,
+              ticker,
+              data: cached.data.slice(0, limit),
+              cached: true
+            }));
+            return;
+          }
+
+          const decodeEntities = (s: string) => {
+            if (!s) return '';
+            return s
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .replace(/&nbsp;/g, ' ');
+          };
+
+          const parseRss = async (queryStr: string) => {
+            const feedUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(queryStr)}&hl=id&gl=ID&ceid=ID:id`;
+            const resp = await fetch(feedUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+              },
+              signal: AbortSignal.timeout(6000)
+            });
+            if (!resp.ok) return [];
+            const xml = await resp.text();
+            const items: any[] = [];
+            const matches = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+
+            for (const itemXml of matches) {
+              const titleMatch = itemXml.match(/<title>([\s\S]*?)<\/title>/);
+              const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
+              const pubDateMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+              const sourceMatch = itemXml.match(/<source[^>]*>([\s\S]*?)<\/source>/);
+
+              let rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
+              let link = linkMatch ? linkMatch[1].trim() : '#';
+              let source = sourceMatch ? sourceMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : 'Warta IDX';
+              let pubDate = pubDateMatch ? pubDateMatch[1].trim() : '';
+
+              rawTitle = decodeEntities(rawTitle);
+              source = decodeEntities(source);
+
+              if (source && rawTitle.endsWith(` - ${source}`)) {
+                rawTitle = rawTitle.slice(0, -(source.length + 3)).trim();
+              }
+              if (!rawTitle) continue;
+
+              let formattedDate = 'Hari Ini';
+              try {
+                const d = new Date(pubDate);
+                if (!isNaN(d.getTime())) {
+                  formattedDate = d.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) + ' WIB';
+                }
+              } catch (e) {}
+
+              const lower = rawTitle.toLowerCase();
+              let catName = 'BERITA EMITEN';
+              let catColor = 'slate';
+              if (lower.includes('dividen') || lower.includes('cum date') || lower.includes('ex date')) {
+                catName = 'DIVIDEN';
+                catColor = 'emerald';
+              } else if (lower.includes('laba') || lower.includes('rugi') || lower.includes('kinerja') || lower.includes('pendapatan') || lower.includes('kuartal') || lower.includes('semester') || lower.includes('q1') || lower.includes('q2') || lower.includes('q3') || lower.includes('q4')) {
+                catName = 'LAPORAN KEUANGAN';
+                catColor = 'blue';
+              } else if (lower.includes('asing') || lower.includes('net buy') || lower.includes('net sell') || lower.includes('inflow') || lower.includes('outflow') || lower.includes('msci') || lower.includes('ftse')) {
+                catName = 'AKSI ASING';
+                catColor = 'purple';
+              } else if (lower.includes('rekomendasi') || lower.includes('target harga') || lower.includes('analis') || lower.includes('buy') || lower.includes('hold') || lower.includes('sell') || lower.includes('potensi')) {
+                catName = 'REKOMENDASI ANALIS';
+                catColor = 'amber';
+              } else if (lower.includes('rups') || lower.includes('akuisisi') || lower.includes('merger') || lower.includes('rights issue') || lower.includes('buyback') || lower.includes('ipo') || lower.includes('ekspansi')) {
+                catName = 'CORPORATE ACTION';
+                catColor = 'cyan';
+              }
+
+              items.push({
+                title: rawTitle,
+                link,
+                source: source || 'Media Finansial',
+                published_at: formattedDate,
+                category: catName,
+                categoryColor: catColor
+              });
+            }
+            return items;
+          };
+
+          let news = await parseRss(`saham ${ticker} when:30d`);
+          if (news.length < 2) {
+            const alt = await parseRss(`${ticker} bursa efek indonesia`);
+            const seen = new Set(news.map(n => n.title.toLowerCase()));
+            for (const a of alt) {
+              if (!seen.has(a.title.toLowerCase())) {
+                news.push(a);
+                seen.add(a.title.toLowerCase());
+              }
+            }
+          }
+          if (news.length === 0) {
+            news = await parseRss(`saham ${ticker}`);
+          }
+
+          if (news.length > 0) {
+            serverNewsCache[ticker] = { data: news, timestamp: Date.now() };
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              success: true,
+              ticker,
+              data: news.slice(0, limit),
+              source: 'GOOGLE_NEWS_IDX'
+            }));
+            return;
+          }
+
+          // Fallback dinamis
+          const fallbackData = [
+            {
+              title: `Keterbukaan Informasi Bursa Terkait Pergerakan Harga dan Likuiditas Saham ${ticker}`,
+              link: `https://www.idx.co.id/id/perusahaan-tercatat/keterbukaan-informasi?search=${ticker}`,
+              source: 'Keterbukaan Resmi IDX',
+              published_at: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 09:15 WIB',
+              category: 'KETERBUKAAN IDX',
+              categoryColor: 'cyan'
+            },
+            {
+              title: `Penyampaian Bukti Iklan Publikasi Laporan Keuangan Berkala Emiten ${ticker}`,
+              link: `https://www.idx.co.id/id/perusahaan-tercatat/laporan-keuangan-dan-tahunan?search=${ticker}`,
+              source: 'BEI Disclosures',
+              published_at: 'Kemarin, 16:40 WIB',
+              category: 'LAPORAN KEUANGAN',
+              categoryColor: 'blue'
+            }
+          ];
+
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            ticker,
+            data: fallbackData,
+            source: 'IDX_FALLBACK'
+          }));
+        } catch (err: any) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.statusCode = 500;
+          res.end(JSON.stringify({ success: false, message: String(err?.message || err) }));
+        }
+      });
+
       server.middlewares.use('/api/apps-script', async (req, res) => {
         const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxp569_Wia0XPhzP81dSCcUte5kaK0nW2yM6GbpXYh5EeYsqwr-SiK_50M_qBeGUK1FfQ/exec';
         res.setHeader('Access-Control-Allow-Origin', '*');

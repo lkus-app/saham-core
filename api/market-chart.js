@@ -36,6 +36,7 @@ export default async function handler(req, res) {
     const timestamps = result.timestamp || [];
     const quote = result.indicators?.quote?.[0] || {};
     const rawCloses = quote.close || [];
+    const rawOpens = quote.open || [];
     const rawHighs = quote.high || [];
     const rawLows = quote.low || [];
     const rawVolumes = quote.volume || [];
@@ -48,12 +49,20 @@ export default async function handler(req, res) {
         const d = new Date(timestamps[i] * 1000);
         const day = String(d.getDate()).padStart(2, '0');
         const month = d.toLocaleDateString('id-ID', { month: 'short' });
+        const closeVal = Math.round(c);
+        const openVal = rawOpens[i] !== null && rawOpens[i] !== undefined && !isNaN(rawOpens[i])
+          ? Math.round(rawOpens[i])
+          : (i > 0 && rawCloses[i - 1] ? Math.round(rawCloses[i - 1]) : closeVal);
+        const highVal = Math.max(Math.round(rawHighs[i] ?? c), openVal, closeVal);
+        const lowVal = Math.min(Math.round(rawLows[i] ?? c), openVal, closeVal);
+
         bars.push({
           date: `${day} ${month}`,
           timestamp: timestamps[i] * 1000,
-          close: Math.round(c),
-          high: Math.round(rawHighs[i] ?? c),
-          low: Math.round(rawLows[i] ?? c),
+          open: openVal,
+          high: highVal,
+          low: lowVal,
+          close: closeVal,
           volume: rawVolumes[i] ?? 0,
         });
       }
@@ -160,6 +169,13 @@ export default async function handler(req, res) {
       changePct,
       labels,
       prices,
+      ohlc: bars.map(b => ({
+        open: b.open,
+        high: b.high,
+        low: b.low,
+        close: b.close,
+        date: b.date
+      })),
       volumes,
       ma20,
       ma50,
