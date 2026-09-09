@@ -881,45 +881,63 @@
       return SECTOR_DICT[ticker] || "IDX Equity / Saham Pilihan";
     }
 
-    function switchModalTab(tabName) {
-      currentModalTab = tabName;
-      const tabs = ['analisa', 'chart', 'news'];
-      
-      tabs.forEach(t => {
-        const btn = document.getElementById(`modal-tab-btn-${t}`);
-        const view = document.getElementById(`modal-view-${t}`);
-        if (btn) {
-          if (t === tabName) {
-            btn.className = 'modal-tab-btn active flex items-center gap-2 px-4 py-2.5 font-bold border-b-2 border-emerald-400 text-emerald-400 bg-emerald-500/5 transition text-xs whitespace-nowrap rounded-t-lg';
-          } else {
-            btn.className = 'modal-tab-btn flex items-center gap-2 px-4 py-2.5 font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition text-xs whitespace-nowrap rounded-t-lg';
-          }
-        }
-        if (view) {
-          if (t === tabName) {
-            view.classList.remove('hidden');
-          } else {
-            view.classList.add('hidden');
-          }
+    /**
+     * 2. PERBAIKAN SWITCH TAB MODAL (AGAR KANVAS TERUKUR OTOMATIS)
+     */
+    function switchModalTab(tabKey) {
+      currentModalTab = tabKey;
+
+      // Sembunyikan semua tab body
+      ['analisa', 'chart', 'news'].forEach(t => {
+        const viewElem = document.getElementById(`modal-view-${t}`);
+        const btnElem = document.getElementById(`modal-tab-btn-${t}`);
+        if (viewElem) viewElem.classList.add('hidden');
+        if (btnElem) {
+          btnElem.className = "modal-tab-btn flex items-center gap-2 px-4 py-2 font-mono font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition text-xs whitespace-nowrap rounded-t-md";
         }
       });
 
-      // When switching to chart tab, resize chart.js canvases to match container width
-      if (tabName === 'chart') {
-        setTimeout(() => {
-          if (chartPrice) chartPrice.resize();
-          if (chartRsi) chartRsi.resize();
-          if (chartMacd) chartMacd.resize();
-        }, 50);
+      // Tampilkan tab aktif
+      const targetView = document.getElementById(`modal-view-${tabKey}`);
+      const targetBtn = document.getElementById(`modal-tab-btn-${tabKey}`);
+      if (targetView) targetView.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.className = "modal-tab-btn active flex items-center gap-2 px-4 py-2 font-mono font-bold border-b-2 border-cyan-400 text-cyan-300 bg-cyan-500/5 transition text-xs whitespace-nowrap rounded-t-md";
       }
 
-      // When switching to news tab, fetch latest disclosures
-      if (tabName === 'news') {
-        fetchIdxNews(selectedStock ? selectedStock.ticker : 'BBCA');
+      // Jika tab chart dibuka, beri jeda sedikit agar container selesai render baru gambar canvas
+      if (tabKey === 'chart' && window.currentSelectedStockData) {
+        setTimeout(() => {
+          renderMainPriceChart(window.currentSelectedStockData);
+          renderOscillatorChart(window.currentSelectedStockData);
+        }, 60);
+      } else if (tabKey === 'news' && window.currentSelectedStockData) {
+        if (typeof fetchIdxNews === 'function') {
+          fetchIdxNews(window.currentSelectedStockData.ticker);
+        }
       }
 
       if (window.lucide) lucide.createIcons();
     }
+    window.switchModalTab = switchModalTab;
+
+    function renderMainPriceChart(stock) {
+      if (!stock) stock = window.currentSelectedStockData;
+      if (!stock) return;
+      if (typeof renderModalCharts === 'function') {
+        renderModalCharts(stock, (typeof selectedTimeframe !== 'undefined' ? selectedTimeframe : '3M'));
+      } else if (chartPrice) {
+        chartPrice.resize();
+      }
+    }
+    window.renderMainPriceChart = renderMainPriceChart;
+
+    function updateModalWithPineLogic(stock) {
+      if (typeof updateTradingPlanAndTabsUI === 'function') {
+        updateTradingPlanAndTabsUI(stock);
+      }
+    }
+    window.updateModalWithPineLogic = updateModalWithPineLogic;
 
     /**
      * DYNAMIC IDX ANNOUNCEMENTS & EMITEN-SPECIFIC NEWS ENGINE
@@ -1473,97 +1491,159 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
     }
     window.openStockModalByTicker = openStockModalByTicker;
 
-    function openStockModal(stock) {
-      if (typeof stock === 'string') {
-        const found = allStocks.find(s => s.ticker === stock);
-        stock = found || { ticker: stock, company: stock, close: 5000, change: 0 };
-      }
-      if (!stock || !stock.ticker) return;
-      window.openStockModal = openStockModal;
+    /**
+     * 3. PERBAIKAN SINKRONISASI MODAL & PERSENTASE CHANGE (SINKRON SHEET)
+     */
+    function updateStockModalDetails(stock) {
+      // Pastikan membaca persentase langsung dari database
+      const close = Number(stock.close || stock.price || 0);
+      const prevClose = Number(stock.prev_close || stock.previous_close || close);
+      
+      // Ambil nilai change_pct yang konsisten
+      let chgPct = (stock.change_pct !== undefined && stock.change_pct !== null) 
+        ? Number(stock.change_pct) 
+        : (stock.change !== undefined ? Number(stock.change) : 0);
 
-      if (realTimeQuotesCache[stock.ticker]) {
-        const live = realTimeQuotesCache[stock.ticker];
-        if (typeof live.price === 'number' && live.price > 0) {
-          stock.close = live.price;
-        }
-        if (typeof live.changePct === 'number') {
-          stock.change = live.changePct;
-        }
-        if (live.volume) {
-          stock.volume = formatVolumeNumber(live.volume);
-        }
+      if (chgPct === 0 && prevClose > 0 && close !== prevClose) {
+        chgPct = Number((((close - prevClose) / prevClose) * 100).toFixed(2));
       }
+
+      const chgSign = chgPct > 0 ? '+' : '';
+      const chgColor = chgPct >= 0 ? 'text-emerald-400' : 'text-rose-400';
+
+      // Update ke Header Modal
+      const changeElem = document.getElementById('m-change');
+      if (changeElem) {
+        changeElem.textContent = `${chgSign}${chgPct.toFixed(2)}%`;
+        changeElem.className = `text-sm font-bold ${chgColor}`;
+      }
+
+      const closeElem = document.getElementById('m-close');
+      if (closeElem) {
+        closeElem.textContent = `Rp ${close.toLocaleString('id-ID')}`;
+      }
+
+      // Simpan data saham untuk oscillator
+      window.currentSelectedStockData = stock;
+    }
+    window.updateStockModalDetails = updateStockModalDetails;
+
+    /**
+     * 1. KUNCI DATA HARIAN EMITEN (MENCEGAH OVERWRITE DATA DARI CHART)
+     */
+    function openStockModal(ticker) {
+      // Ambil objek saham murni dari array database
+      const tickerSymbol = typeof ticker === 'string' ? ticker : (ticker && ticker.ticker ? ticker.ticker : '');
+      const rawStock = (Array.isArray(allStocks) ? allStocks.find(item => item.ticker === tickerSymbol) : null) || (typeof ticker === 'object' ? ticker : null);
+      if (!rawStock) return;
+
+      // CLONE OBJECT: agar data asli di tabel tidak termutasi oleh kalkulasi chart
+      const stock = JSON.parse(JSON.stringify(rawStock));
+      window.currentSelectedStockData = stock;
       selectedStock = stock;
-      document.getElementById('m-ticker').textContent = stock.ticker;
-      document.getElementById('m-ticker-box').textContent = stock.ticker;
-      document.getElementById('m-company').textContent = stock.company;
-      
-      const safeClose = stock.close || 5000;
-      document.getElementById('m-close').textContent = `Rp ${safeClose.toLocaleString('id-ID')}`;
-      
-      const safeChg = typeof stock.change === 'number' ? stock.change : 0;
-      const isPos = safeChg >= 0;
-      const chgElem = document.getElementById('m-change');
-      chgElem.textContent = `${isPos ? '+' : ''}${safeChg.toFixed(2)}%`;
-      chgElem.className = isPos ? 'font-bold text-emerald-400 font-mono text-sm' : 'font-bold text-rose-400 font-mono text-sm';
-      document.getElementById('m-vol').textContent = stock.volume || '25.4M';
 
-      const prevClose = Math.round(safeClose / (1 + (safeChg / 100)));
-      let numVol = 25400000;
-      if (typeof stock.volume === 'number') numVol = stock.volume;
-      else if (stock.rawVolume) numVol = stock.rawVolume;
-      else if (typeof stock.volume === 'string') {
-        const m = stock.volume.match(/([\d.]+)\s*([KkMmBbTt]?)/);
-        if (m) {
-          const val = parseFloat(m[1]);
-          const unit = m[2].toUpperCase();
-          numVol = unit === 'B' ? val * 1e9 : unit === 'M' ? val * 1e6 : unit === 'K' ? val * 1e3 : val;
-        }
+      // Baca persentase harian murni langsung dari database Sheets
+      const dailyChange = Number(
+        stock.change_pct !== undefined ? stock.change_pct : (stock.change !== undefined ? stock.change : 0)
+      );
+      const closePrice = Number(stock.close || stock.price || 0);
+
+      // Set data Header Modal
+      const mTicker = document.getElementById('m-ticker');
+      if (mTicker) mTicker.textContent = stock.ticker;
+      const mTickerBox = document.getElementById('m-ticker-box');
+      if (mTickerBox) mTickerBox.textContent = stock.ticker;
+      const mCompany = document.getElementById('m-company');
+      if (mCompany) mCompany.textContent = stock.name || stock.company_name || stock.company || stock.ticker;
+      const mClose = document.getElementById('m-close');
+      if (mClose) mClose.textContent = `Rp ${closePrice.toLocaleString('id-ID')}`;
+
+      // Tampilkan Persentase Harian Asli (Minus tetap Minus, Plus tetap Plus)
+      const changeElem = document.getElementById('m-change');
+      if (changeElem) {
+        const sign = dailyChange > 0 ? '+' : '';
+        changeElem.textContent = `${sign}${dailyChange.toFixed(2)}%`;
+        changeElem.className = `text-sm font-bold ${dailyChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
       }
 
-      window.currentSelectedStockData = {
-        ...stock,
-        close: safeClose,
-        prev_close: prevClose,
-        volume: numVol,
-        macd: typeof stock.macd === 'number' ? stock.macd : (safeChg >= 0 ? 12.8 : -9.4),
-        macd_signal: typeof stock.macd_signal === 'number' ? stock.macd_signal : (safeChg >= 0 ? 9.6 : -6.1),
-        rsi_14: typeof stock.rsi === 'number' ? stock.rsi : 50
-      };
+      // Tampilkan Volume Asli
+      const volElem = document.getElementById('m-vol');
+      if (volElem) {
+        const volVal = Number(stock.value_idr || stock.volume || 0);
+        volElem.textContent = volVal >= 1000000000 
+          ? `${(volVal / 1000000000).toFixed(1)} M` 
+          : `${(volVal / 1000000).toFixed(1)} JT`;
+      }
 
       // Pivots
-      document.getElementById('m-r2').textContent = `Rp ${Math.round(safeClose * 1.05).toLocaleString('id-ID')}`;
-      document.getElementById('m-r1').textContent = `Rp ${Math.round(safeClose * 1.025).toLocaleString('id-ID')}`;
-      document.getElementById('m-pp').textContent = `Rp ${Math.round(safeClose * 1.00).toLocaleString('id-ID')}`;
-      document.getElementById('m-s1').textContent = `Rp ${Math.round(safeClose * 0.975).toLocaleString('id-ID')}`;
-      document.getElementById('m-s2').textContent = `Rp ${Math.round(safeClose * 0.95).toLocaleString('id-ID')}`;
+      const r2 = document.getElementById('m-r2');
+      if (r2) r2.textContent = `Rp ${Math.round(closePrice * 1.05).toLocaleString('id-ID')}`;
+      const r1 = document.getElementById('m-r1');
+      if (r1) r1.textContent = `Rp ${Math.round(closePrice * 1.025).toLocaleString('id-ID')}`;
+      const pp = document.getElementById('m-pp');
+      if (pp) pp.textContent = `Rp ${Math.round(closePrice * 1.00).toLocaleString('id-ID')}`;
+      const s1 = document.getElementById('m-s1');
+      if (s1) s1.textContent = `Rp ${Math.round(closePrice * 0.975).toLocaleString('id-ID')}`;
+      const s2 = document.getElementById('m-s2');
+      if (s2) s2.textContent = `Rp ${Math.round(closePrice * 0.95).toLocaleString('id-ID')}`;
 
-      // Default to Analisa tab
+      // Jalankan kalkulasi Pine Confluence
+      if (typeof updateModalWithPineLogic === 'function') {
+        updateModalWithPineLogic(stock);
+      }
+
+      // Buka modal dulu ke tab Analisa
+      const modal = document.getElementById('modal-stock');
+      if (modal) modal.classList.remove('hidden');
       switchModalTab('analisa');
-      updateTradingPlanAndTabsUI(stock);
-
-      document.getElementById('modal-stock').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
 
-      // Render chart for selected timeframe
-      renderModalCharts(stock, selectedTimeframe);
+      // Render chart for selected timeframe di latar belakang
+      if (typeof renderModalCharts === 'function') {
+        renderModalCharts(stock, (typeof selectedTimeframe !== 'undefined' ? selectedTimeframe : '3M'));
+      }
     }
+    window.openStockModal = openStockModal;
+    window.openStockModalByTicker = openStockModal;
 
+    /**
+     * 3. FUNGSI CLOSE MODAL BERSIH (TANPA MERUSAK STATE TABEL)
+     */
     function closeStockModal() {
-      document.getElementById('modal-stock').classList.add('hidden');
+      const modal = document.getElementById('modal-stock');
+      if (modal) modal.classList.add('hidden');
+      window.currentSelectedStockData = null;
+      
+      // Render ulang tabel untuk memastikan semua angka tetap 100% konsisten
+      if (typeof renderScreenerTable === 'function' && Array.isArray(allStocks)) {
+        renderScreenerTable(allStocks);
+      }
     }
+    window.closeStockModal = closeStockModal;
 
+    /**
+     * 2. PASTIKAN CHART TIMEFRAME TIDAK MENGUBAH PERSENTASE MODAL
+     * Cari fungsi updateChartTimeframe / renderPriceChart, pastikan baris berikut:
+     */
     function updateChartTimeframe(tf) {
-      selectedTimeframe = tf;
+      // Hanya ubah style tombol pill aktif
       document.querySelectorAll('.tf-pill').forEach(b => {
-        if (b.dataset.tf === tf) {
-          b.className = 'tf-pill active px-2.5 py-1 rounded text-[11px] font-bold bg-cyan-600 text-slate-950 transition-all duration-200 shadow-sm';
-        } else {
-          b.className = 'tf-pill px-2.5 py-1 rounded text-[11px] font-bold bg-[#1a1d26] border border-[#2a2e3d] text-slate-300 hover:bg-[#232836] transition-all duration-200';
-        }
+        b.className = "tf-pill px-2.5 py-1 rounded text-[11px] font-bold bg-[#1a1d26] border border-[#2a2e3d] text-slate-300 hover:bg-[#232836] transition-all duration-200";
       });
-      if (selectedStock) renderModalCharts(selectedStock, tf);
+      const activeBtn = document.querySelector(`[data-tf="${tf}"]`);
+      if (activeBtn) {
+        activeBtn.className = "tf-pill active px-2.5 py-1 rounded text-[11px] font-bold bg-cyan-600 text-slate-950 transition-all duration-200 shadow-sm";
+      }
+
+      selectedTimeframe = tf;
+      if (selectedStock && typeof renderModalCharts === 'function') {
+        renderModalCharts(selectedStock, tf);
+      }
+
+      // PENTING: JANGAN ubah document.getElementById('m-change') di sini!
+      // Biarkan m-change tetap menampilkan perubahan harga harian.
     }
+    window.updateChartTimeframe = updateChartTimeframe;
 
     /**
      * CANDLESTICK & HOVER HIGHLIGHT ENGINE FOR CHART.JS
@@ -1891,56 +1971,26 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
 
       currentChartData = chartData;
 
-      // Complete Two-Way Synchronization: Update Modal, Objek Stock, Pivot Points, Cache, and Screener Table
+      // PENTING: JANGAN ubah document.getElementById('m-change') di sini!
+      // Biarkan m-change tetap menampilkan perubahan harga harian murni dari database.
       if (chartData.currentPrice) {
         const liveClose = chartData.currentPrice;
-        const liveChg = typeof chartData.changePct === 'number' ? chartData.changePct : 0;
         
-        // Update stock in-memory reference
-        stock.close = liveClose;
-        stock.change = liveChg;
-        if (chartData.volume) {
-          stock.volume = formatVolumeNumber(chartData.volume);
-          stock.rawVolume = chartData.volume;
-        }
+        // Simpan harga penutupan chart jika relevan
         stock.support = Math.round(liveClose * 0.96);
         selectedStock = stock;
 
-        // 1. Update modal close price and change badges
-        document.getElementById('m-close').textContent = `Rp ${liveClose.toLocaleString('id-ID')}`;
-        const isPos = liveChg >= 0;
-        const chgElem = document.getElementById('m-change');
-        chgElem.textContent = `${isPos ? '+' : ''}${liveChg.toFixed(2)}%`;
-        chgElem.className = isPos ? 'font-bold text-emerald-400 font-mono' : 'font-bold text-rose-400 font-mono';
-
-        if (chartData.volume) {
-          document.getElementById('m-vol').textContent = stock.volume;
-        }
-
         // 2. Re-calculate Pivots with exact live close
-        document.getElementById('m-r2').textContent = `Rp ${Math.round(liveClose * 1.05).toLocaleString('id-ID')}`;
-        document.getElementById('m-r1').textContent = `Rp ${Math.round(liveClose * 1.025).toLocaleString('id-ID')}`;
-        document.getElementById('m-pp').textContent = `Rp ${Math.round(liveClose * 1.00).toLocaleString('id-ID')}`;
-        document.getElementById('m-s1').textContent = `Rp ${Math.round(liveClose * 0.975).toLocaleString('id-ID')}`;
-        document.getElementById('m-s2').textContent = `Rp ${Math.round(liveClose * 0.95).toLocaleString('id-ID')}`;
-
-        // 3. Save into client-side realTimeQuotesCache
-        realTimeQuotesCache[stock.ticker] = {
-          ticker: stock.ticker,
-          price: liveClose,
-          changePct: liveChg,
-          volume: chartData.volume
-        };
-
-        // 4. Update the stock in allStocks list and refresh screener table row
-        const stockIdx = allStocks.findIndex(s => s.ticker === stock.ticker);
-        if (stockIdx !== -1) {
-          allStocks[stockIdx].close = liveClose;
-          allStocks[stockIdx].change = liveChg;
-          if (chartData.volume) allStocks[stockIdx].volume = stock.volume;
-          allStocks[stockIdx].support = Math.round(liveClose * 0.96);
-        }
-        renderScreenerTable();
+        const r2 = document.getElementById('m-r2');
+        if (r2) r2.textContent = `Rp ${Math.round(liveClose * 1.05).toLocaleString('id-ID')}`;
+        const r1 = document.getElementById('m-r1');
+        if (r1) r1.textContent = `Rp ${Math.round(liveClose * 1.025).toLocaleString('id-ID')}`;
+        const pp = document.getElementById('m-pp');
+        if (pp) pp.textContent = `Rp ${Math.round(liveClose * 1.00).toLocaleString('id-ID')}`;
+        const s1 = document.getElementById('m-s1');
+        if (s1) s1.textContent = `Rp ${Math.round(liveClose * 0.975).toLocaleString('id-ID')}`;
+        const s2 = document.getElementById('m-s2');
+        if (s2) s2.textContent = `Rp ${Math.round(liveClose * 0.95).toLocaleString('id-ID')}`;
       }
 
       // Synchronize Smart Trading Plan & Tabs with fresh chart data
@@ -2142,6 +2192,7 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       // 2. MULTI-OSCILLATOR SUB-CHART (MACD / RSI / VOLUME / A/D)
       // =================================================================
       if (currentChartData) {
+        window.mainPriceChartLabels = currentChartData.labels;
         window.currentSelectedStockData = {
           ...window.currentSelectedStockData,
           ...stock,
@@ -2149,12 +2200,13 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
           closes: currentChartData.prices,
           opens: currentChartData.ohlc ? currentChartData.ohlc.map(b => b.open) : undefined,
           volumes: currentChartData.volumes,
-          close: stock.close || 5000,
-          prev_close: window.currentSelectedStockData?.prev_close || (stock.close * 0.99),
+          close: Number(stock.close || stock.price || 5000),
+          prev_close: Number(stock.prev_close || stock.previous_close || window.currentSelectedStockData?.prev_close || (stock.close * 0.99)),
+          change_pct: stock.change_pct !== undefined ? stock.change_pct : stock.change,
           volume: window.currentSelectedStockData?.volume || 25400000,
           macd: typeof stock.macd === 'number' ? stock.macd : (stock.change >= 0 ? 12.8 : -9.4),
           macd_signal: typeof stock.macd_signal === 'number' ? stock.macd_signal : (stock.change >= 0 ? 9.6 : -6.1),
-          rsi_14: typeof stock.rsi === 'number' ? stock.rsi : 50
+          rsi_14: typeof stock.rsi_14 === 'number' ? stock.rsi_14 : (typeof stock.rsi === 'number' ? stock.rsi : 50)
         };
       }
       renderOscillatorChart(window.currentSelectedStockData);
@@ -2162,45 +2214,133 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       hideChartLoading();
     }
 
+    /**
+     * 1. FORMULA GENERATOR HISTORIS LENGKAP UNTUK MULTI-OSCILLATOR
+     * Menyesuaikan panjang data MACD, RSI, Vol, dan A/D dengan seluruh label tanggal chart
+     */
+    function generateHistoricalOscillators(stockData, labelsCount) {
+      stockData = stockData || {};
+      const baseRsi = Number(stockData.rsi_14 || stockData.rsi || 50);
+      const baseMacd = Number(stockData.macd || 0);
+      const baseMacdSig = Number(stockData.macd_signal || 0);
+      const baseVol = Number(stockData.volume || 10000000);
+      const baseClose = Number(stockData.close || 1000);
+      const changePct = Number(stockData.change_pct !== undefined ? stockData.change_pct : (stockData.change || 0));
 
+      const count = labelsCount || 60; // Mengikuti jumlah candle yang tampil
+      const rsiSeries = [];
+      const macdLine = [];
+      const sigLine = [];
+      const histSeries = [];
+      const volSeries = [];
+      const adSeries = [];
 
-    // 2. Fungsi Render Chart Multi-Oscillator
+      let currentAd = 0;
+
+      for (let i = 0; i < count; i++) {
+        // Progresi dinamis menuju nilai riil hari ini di titik terakhir (i === count - 1)
+        const ratio = (i + 1) / count;
+        const wave = Math.sin(i * 0.35) * 4;
+
+        // RSI (0 - 100)
+        const rVal = (i === count - 1) ? baseRsi : Math.min(85, Math.max(20, (baseRsi - (1 - ratio) * 10) + wave));
+        rsiSeries.push(Number(rVal.toFixed(1)));
+
+        // MACD & Signal Line
+        const mVal = (i === count - 1) ? baseMacd : ((baseMacd * 0.4) + (baseMacd * 0.6 * ratio) + (wave * 0.2));
+        const sVal = (i === count - 1) ? baseMacdSig : (mVal * 0.85);
+        macdLine.push(Number(mVal.toFixed(2)));
+        sigLine.push(Number(sVal.toFixed(2)));
+        histSeries.push(Number((mVal - sVal).toFixed(2)));
+
+        // Volume & Accumulation/Distribution
+        const vVal = Math.round(baseVol * (0.6 + (Math.random() * 0.8)));
+        volSeries.push(vVal);
+
+        const priceSim = baseClose * (0.9 + (0.1 * ratio) + (wave * 0.005));
+        const mfm = (priceSim >= baseClose * 0.95) ? 0.6 : -0.4;
+        currentAd += Math.round(mfm * vVal);
+        adSeries.push(currentAd);
+      }
+
+      return { rsiSeries, macdLine, sigLine, histSeries, volSeries, adSeries };
+    }
+    window.generateHistoricalOscillators = generateHistoricalOscillators;
+
+    /**
+     * 3. RENDER MULTI-OSCILLATOR CHART (FULL TIMELINE)
+     */
     function renderOscillatorChart(stockData) {
-      const canvas = document.getElementById('chart-canvas-oscillator');
+      // Deteksi kanvas oscillator atau fallback ke kanvas rsi/macd lama jika belum diganti
+      let canvas = document.getElementById('chart-canvas-oscillator');
+      if (!canvas) {
+        canvas = document.getElementById('chart-canvas-rsi') || document.getElementById('rsiChart');
+      }
       if (!canvas) return;
-      const ctx = canvas.getContext('2d');
 
+      const ctx = canvas.getContext('2d');
       if (oscillatorChartInstance) {
         oscillatorChartInstance.destroy();
       }
 
       stockData = stockData || window.currentSelectedStockData || {};
-      if (typeof stockData.macd !== 'number') stockData.macd = 12.5;
-      if (typeof stockData.macd_signal !== 'number') stockData.macd_signal = 10.2;
-      if (typeof stockData.rsi_14 !== 'number') stockData.rsi_14 = stockData.rsi || 50;
-      if (!stockData.close) stockData.close = 5000;
-      if (!stockData.prev_close) stockData.prev_close = stockData.close * 0.99;
-      if (!stockData.volume) stockData.volume = 25400000;
 
-      const labels = stockData.labels || ['T-4', 'T-3', 'T-2', 'Kemarin', 'Hari Ini'];
-      const closes = stockData.closes || [stockData.close * 0.97, stockData.close * 0.98, stockData.close * 0.99, stockData.prev_close, stockData.close];
-      const opens = stockData.opens || closes.map(c => c * 0.995);
-      const volumes = stockData.volumes || [stockData.volume * 0.8, stockData.volume * 1.1, stockData.volume * 0.9, stockData.volume * 1.2, stockData.volume];
+      // Buat 60 titik historis penuh atau ikuti panjang label chart jika sinkron
+      const count = (stockData.labels && stockData.labels.length > 0) ? stockData.labels.length : 60;
+      const labels = (stockData.labels && stockData.labels.length > 0)
+        ? stockData.labels
+        : Array.from({length: count}, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (count - 1 - i));
+            return `${String(d.getDate()).padStart(2, '0')} ${d.toLocaleString('id-ID', { month: 'short' })}`;
+          });
+
+      const baseRsi = Number(stockData.rsi_14 || stockData.rsi || 50);
+      const baseMacd = Number(stockData.macd || 0.5);
+      const baseMacdSig = Number(stockData.macd_signal || 0.4);
+      const baseVol = Number(stockData.volume || 10000000);
+
+      const rsiSeries = [];
+      const macdLine = [];
+      const sigLine = [];
+      const histSeries = [];
+      const volSeries = [];
+      const adSeries = [];
+
+      let currentAd = 0;
+      for (let i = 0; i < count; i++) {
+        const ratio = (i + 1) / count;
+        const wave = Math.sin(i * 0.4) * 3.5;
+
+        // RSI
+        const r = (i === count - 1) ? baseRsi : Math.min(85, Math.max(20, (baseRsi - (1 - ratio) * 8) + wave));
+        rsiSeries.push(Number(r.toFixed(1)));
+
+        // MACD
+        const m = (i === count - 1) ? baseMacd : ((baseMacd * 0.5) + (baseMacd * 0.5 * ratio) + (wave * 0.15));
+        const s = (i === count - 1) ? baseMacdSig : (m * 0.85);
+        macdLine.push(Number(m.toFixed(2)));
+        sigLine.push(Number(s.toFixed(2)));
+        histSeries.push(Number((m - s).toFixed(2)));
+
+        // Volume & AD
+        const v = Math.round(baseVol * (0.6 + Math.abs(Math.sin(i)) * 0.8));
+        volSeries.push(v);
+        currentAd += (r >= 50 ? 0.6 : -0.4) * v;
+        adSeries.push(currentAd);
+      }
 
       let datasets = [];
       let yAxisConfig = { ticks: { color: '#64748b' }, grid: { color: '#22293a' } };
 
+      // 1. MACD
       if (currentOscMode === 'MACD') {
-        const macdLine = [stockData.macd * 0.7, stockData.macd * 0.8, stockData.macd * 0.9, stockData.macd * 0.95, stockData.macd];
-        const sigLine = [stockData.macd_signal * 0.7, stockData.macd_signal * 0.8, stockData.macd_signal * 0.85, stockData.macd_signal * 0.9, stockData.macd_signal];
-        const hist = macdLine.map((val, idx) => val - sigLine[idx]);
-
         datasets = [
           {
             type: 'bar',
             label: 'MACD Histogram',
-            data: hist,
-            backgroundColor: hist.map(h => h >= 0 ? '#10b981' : '#f43f5e'),
+            data: histSeries,
+            backgroundColor: histSeries.map(h => h >= 0 ? '#10b981' : '#f43f5e'),
             borderRadius: 2
           },
           {
@@ -2221,74 +2361,68 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
           }
         ];
         const statusLabel = document.getElementById('osc-status-label');
-        if (statusLabel) statusLabel.textContent = `MACD: ${stockData.macd.toFixed(1)} | Signal: ${stockData.macd_signal.toFixed(1)}`;
-      } else if (currentOscMode === 'RSI') {
-        const rsiVal = stockData.rsi_14 || 50;
-        const rsiSeries = [rsiVal - 5, rsiVal - 3, rsiVal - 1, rsiVal + 1, rsiVal];
-
-        datasets = [
-          {
-            type: 'line',
-            label: 'RSI (14)',
-            data: rsiSeries,
-            borderColor: '#a855f7',
-            backgroundColor: 'rgba(168, 85, 247, 0.1)',
-            fill: true,
-            borderWidth: 2,
-            pointRadius: 2
-          }
-        ];
+        if (statusLabel) {
+          statusLabel.textContent = `MACD: ${Number(baseMacd).toFixed(2)} | Sig: ${Number(baseMacdSig).toFixed(2)}`;
+        }
+      } 
+      // 2. RSI
+      else if (currentOscMode === 'RSI') {
+        datasets = [{
+          type: 'line',
+          label: 'RSI (14)',
+          data: rsiSeries,
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168, 85, 247, 0.12)',
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 0
+        }];
         yAxisConfig.min = 0;
         yAxisConfig.max = 100;
         const statusLabel = document.getElementById('osc-status-label');
-        if (statusLabel) statusLabel.textContent = `RSI: ${rsiVal} (${rsiVal >= 70 ? 'Overbought' : rsiVal <= 30 ? 'Oversold' : 'Neutral'})`;
-      } else if (currentOscMode === 'VOL') {
-        const volMa = volumes.reduce((a, b) => a + b, 0) / volumes.length;
-        const volMaSeries = volumes.map(() => volMa);
-
+        if (statusLabel) {
+          statusLabel.textContent = `RSI: ${baseRsi.toFixed(1)} (${baseRsi >= 70 ? 'Overbought' : baseRsi <= 30 ? 'Oversold' : 'Neutral'})`;
+        }
+      }
+      // 3. VOLUME
+      else if (currentOscMode === 'VOL') {
+        const volMa = volSeries.reduce((a, b) => a + b, 0) / count;
         datasets = [
           {
             type: 'bar',
             label: 'Volume',
-            data: volumes,
-            backgroundColor: closes.map((c, i) => c >= opens[i] ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)'),
+            data: volSeries,
+            backgroundColor: 'rgba(16, 185, 129, 0.65)',
             borderRadius: 2
           },
           {
             type: 'line',
             label: 'Volume MA (20)',
-            data: volMaSeries,
+            data: volSeries.map(() => volMa),
             borderColor: '#eab308',
             borderWidth: 2,
             pointRadius: 0
           }
         ];
         const statusLabel = document.getElementById('osc-status-label');
-        if (statusLabel) statusLabel.textContent = `Vol: ${(stockData.volume / 1000000).toFixed(1)}M | MA: ${(volMa / 1000000).toFixed(1)}M`;
-      } else if (currentOscMode === 'AD') {
-        let adCum = 0;
-        const adSeries = closes.map((c, i) => {
-          const high = c * 1.01;
-          const low = opens[i] * 0.99;
-          const mfm = ((c - low) - (high - c)) / (high - low || 1);
-          adCum += (mfm * volumes[i]);
-          return adCum;
-        });
-
-        datasets = [
-          {
-            type: 'line',
-            label: 'A/D Line',
-            data: adSeries,
-            borderColor: '#06b6d4',
-            borderWidth: 2,
-            fill: false,
-            pointRadius: 2
-          }
-        ];
-        const isAccum = (adSeries[4] !== undefined && adSeries[3] !== undefined ? adSeries[4] >= adSeries[3] : (adSeries[adSeries.length - 1] >= adSeries[adSeries.length - 2]));
+        if (statusLabel) {
+          statusLabel.textContent = `Volume: ${(Number(baseVol) / 1000000).toFixed(1)}M`;
+        }
+      }
+      // 4. A/D
+      else if (currentOscMode === 'AD') {
+        datasets = [{
+          type: 'line',
+          label: 'A/D Line',
+          data: adSeries,
+          borderColor: '#06b6d4',
+          borderWidth: 2,
+          pointRadius: 0
+        }];
         const statusLabel = document.getElementById('osc-status-label');
-        if (statusLabel) statusLabel.textContent = `A/D Status: ${isAccum ? 'Akumulasi Asing/Bandar' : 'Distribusi'}`;
+        if (statusLabel) {
+          statusLabel.textContent = `A/D Line: Terakumulasi`;
+        }
       }
 
       oscillatorChartInstance = new Chart(ctx, {
@@ -2296,11 +2430,12 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 250 },
           plugins: {
             legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } } }
           },
           scales: {
-            x: { ticks: { color: '#64748b' }, grid: { color: '#22293a' } },
+            x: { ticks: { color: '#64748b', maxTicksLimit: 10 }, grid: { color: '#22293a' } },
             y: yAxisConfig
           }
         }

@@ -688,11 +688,11 @@
   <!-- ================================================================= -->
   <!-- 3. MODAL: DETAIL SAHAM & TELEMETRY INSPECTOR                      -->
   <!-- ================================================================= -->
-  <div id="modal-stock" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
-    <div class="max-w-4xl w-full my-auto rounded-xl border border-[#2a2e3d] bg-[#1a1d26] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+  <div id="modal-stock" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-1.5 sm:p-4 overflow-y-auto">
+    <div class="max-w-4xl w-full my-auto rounded-xl border border-[#2a2e3d] bg-[#1a1d26] shadow-2xl overflow-hidden h-[95dvh] sm:h-auto sm:max-h-[92vh] flex flex-col">
       
       <!-- Modal Header -->
-      <div class="px-4 py-3 border-b border-[#2a2e3d] bg-[#12151c] flex items-center justify-between shrink-0">
+      <div class="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-[#2a2e3d] bg-[#12151c] flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2 font-mono text-xs">
           <i data-lucide="bar-chart-2" class="w-4 h-4 text-cyan-400"></i>
           <span class="text-slate-300 font-bold">ANALISIS EMITEN:</span>
@@ -704,37 +704,37 @@
       </div>
 
       <!-- Emiten Header Summary Bar -->
-      <div class="p-4 bg-[#12151c] border-b border-[#2a2e3d] flex flex-wrap items-center justify-between gap-4 shrink-0">
-        <div class="flex items-center gap-3">
-          <span id="m-ticker-box" class="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 font-mono font-extrabold text-base">
+      <div class="p-3 sm:p-4 bg-[#12151c] border-b border-[#2a2e3d] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
+        <div class="flex items-center gap-2.5 sm:gap-3">
+          <span id="m-ticker-box" class="px-2.5 sm:px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 font-mono font-extrabold text-sm sm:text-base shrink-0">
             BBCA
           </span>
-          <div>
-            <h3 id="m-company" class="font-bold text-white text-sm font-sans">Bank Central Asia Tbk</h3>
-            <span id="m-sector" class="text-[11px] font-mono text-slate-400">Financials / Perbankan</span>
+          <div class="min-w-0 flex-1">
+            <h3 id="m-company" class="font-bold text-white text-xs sm:text-sm font-sans truncate">Bank Central Asia Tbk</h3>
+            <span id="m-sector" class="text-[10px] sm:text-[11px] font-mono text-slate-400 block truncate">Financials / Perbankan</span>
           </div>
         </div>
 
-        <div class="flex items-center gap-6 font-mono">
+        <div class="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6 font-mono border-t border-[#2a2e3d]/60 sm:border-0 pt-2 sm:pt-0">
           <div>
-            <span class="text-[10px] text-slate-500 block uppercase">Harga Terakhir</span>
-            <span id="m-close" class="text-lg font-extrabold text-white">Rp 9.800</span>
+            <span class="text-[9px] sm:text-[10px] text-slate-500 block uppercase">Harga Terakhir</span>
+            <span id="m-close" class="text-sm sm:text-lg font-extrabold text-white whitespace-nowrap">Rp 9.800</span>
           </div>
           <div>
-            <span class="text-[10px] text-slate-500 block uppercase">Perubahan</span>
-            <span id="m-change" class="text-sm font-bold text-emerald-400">+1.25%</span>
+            <span class="text-[9px] sm:text-[10px] text-slate-500 block uppercase">Perubahan</span>
+            <span id="m-change" class="text-xs sm:text-sm font-bold text-emerald-400 whitespace-nowrap">+1.25%</span>
           </div>
           <div>
-            <span class="text-[10px] text-slate-500 block uppercase">Volume</span>
-            <span id="m-vol" class="text-xs font-semibold text-slate-300">45.2 M</span>
+            <span class="text-[9px] sm:text-[10px] text-slate-500 block uppercase">Volume</span>
+            <span id="m-vol" class="text-xs sm:text-sm font-semibold text-slate-300 whitespace-nowrap">45.2 M</span>
           </div>
         </div>
       </div>
 
       <!-- Classical Pivot Points Row -->
-      <div class="px-4 py-2 bg-[#161920] border-b border-[#2a2e3d] flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-slate-400 shrink-0">
-        <div class="flex items-center gap-1.5">
-          <span class="text-slate-500">PIVOTS:</span>
+      <div class="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#161920] border-b border-[#2a2e3d] flex items-center justify-between gap-2 font-mono text-[10px] sm:text-[11px] text-slate-400 shrink-0 overflow-x-auto no-scrollbar">
+        <div class="flex items-center gap-1.5 whitespace-nowrap">
+          <span class="text-slate-500 font-bold">PIVOTS:</span>
           <span class="text-rose-400">R2: <strong id="m-r2" class="text-white">-</strong></span>
           <span class="text-slate-600">&bull;</span>
           <span class="text-amber-400">R1: <strong id="m-r1" class="text-white">-</strong></span>
@@ -745,153 +745,153 @@
           <span class="text-slate-600">&bull;</span>
           <span class="text-emerald-500">S2: <strong id="m-s2" class="text-white">-</strong></span>
         </div>
-        <div class="text-[10px] text-slate-500">Daily Range Levels</div>
+        <div class="text-[9px] sm:text-[10px] text-slate-500 whitespace-nowrap hidden sm:block">Daily Range Levels</div>
       </div>
 
       <!-- Modal Tabs Navigation -->
-      <div class="flex items-center border-b border-[#2a2e3d] bg-[#1a1d26] px-4 pt-2 gap-2 shrink-0">
+      <div class="flex items-center border-b border-[#2a2e3d] bg-[#1a1d26] px-2 sm:px-4 pt-1.5 sm:pt-2 gap-1.5 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar">
         <button
           id="modal-tab-btn-analisa"
           onclick="switchModalTab('analisa')"
-          class="modal-tab-btn active flex items-center gap-2 px-4 py-2 font-mono font-bold border-b-2 border-cyan-400 text-cyan-300 bg-cyan-500/5 transition text-xs whitespace-nowrap rounded-t-md"
+          class="modal-tab-btn active flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 font-mono font-bold border-b-2 border-cyan-400 text-cyan-300 bg-cyan-500/5 transition text-xs whitespace-nowrap rounded-t-md shrink-0"
         >
           <i data-lucide="compass" class="w-3.5 h-3.5"></i>
-          <span>TAB 1: TRADING PLAN &amp; CONFLUENCE</span>
+          <span class="hidden sm:inline">TAB 1: </span><span>TRADING PLAN</span>
         </button>
         <button
           id="modal-tab-btn-chart"
           onclick="switchModalTab('chart')"
-          class="modal-tab-btn flex items-center gap-2 px-4 py-2 font-mono font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition text-xs whitespace-nowrap rounded-t-md"
+          class="modal-tab-btn flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 font-mono font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition text-xs whitespace-nowrap rounded-t-md shrink-0"
         >
           <i data-lucide="candlestick-chart" class="w-3.5 h-3.5"></i>
-          <span>TAB 2: MULTI-CHART INTERACTIVE</span>
+          <span class="hidden sm:inline">TAB 2: </span><span>MULTI-CHART</span>
         </button>
         <button
           id="modal-tab-btn-news"
           onclick="switchModalTab('news')"
-          class="modal-tab-btn flex items-center gap-2 px-4 py-2 font-mono font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition text-xs whitespace-nowrap rounded-t-md"
+          class="modal-tab-btn flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 font-mono font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition text-xs whitespace-nowrap rounded-t-md shrink-0"
         >
           <i data-lucide="newspaper" class="w-3.5 h-3.5"></i>
-          <span>TAB 3: KETERBUKAAN BEI &amp; BERITA</span>
+          <span class="hidden sm:inline">TAB 3: </span><span>BERITA &amp; BEI</span>
         </button>
       </div>
 
       <!-- Modal Tab View 1: Trading Plan & Confluence -->
-      <div id="modal-view-analisa" class="p-4 sm:p-5 overflow-y-auto space-y-5 flex-1 font-mono">
+      <div id="modal-view-analisa" class="p-3 sm:p-5 overflow-y-auto min-h-0 space-y-3.5 sm:space-y-5 flex-1 font-mono overscroll-contain">
         
         <!-- Score & Status Banner -->
-        <div class="p-4 rounded-xl bg-[#12151c] border border-[#2a2e3d] flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <div class="text-center pr-4 border-r border-[#2a2e3d]">
-              <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Quant Score</span>
-              <span id="m-plan-score" class="text-4xl font-extrabold text-cyan-400">85%</span>
+        <div class="p-3 sm:p-4 rounded-xl bg-[#12151c] border border-[#2a2e3d] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div class="flex items-center gap-3 sm:gap-4">
+            <div class="text-center pr-3 sm:pr-4 border-r border-[#2a2e3d] shrink-0">
+              <span class="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-wider block">Quant Score</span>
+              <span id="m-plan-score" class="text-2xl sm:text-4xl font-extrabold text-cyan-400">85%</span>
             </div>
-            <div>
-              <span id="m-plan-score-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 inline-block mb-1">
+            <div class="min-w-0">
+              <span id="m-plan-score-badge" class="px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 inline-block mb-1">
                 HIGH PROBABILITY
               </span>
-              <h4 id="m-plan-strategy" class="text-sm font-bold text-white font-sans">Buy on Support (Swing)</h4>
-              <span class="text-xs text-slate-400">Bias Tren: <strong id="m-plan-bias" class="text-emerald-400 font-mono">Bullish Expansion</strong></span>
+              <h4 id="m-plan-strategy" class="text-xs sm:text-sm font-bold text-white font-sans truncate">Buy on Support (Swing)</h4>
+              <span class="text-[11px] sm:text-xs text-slate-400 block truncate">Bias Tren: <strong id="m-plan-bias" class="text-emerald-400 font-mono">Bullish Expansion</strong></span>
             </div>
           </div>
 
-          <div class="text-right">
-            <span id="m-plan-status-badge" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-950 border border-emerald-800 text-emerald-300 inline-block">
+          <div class="text-left sm:text-right shrink-0">
+            <span id="m-plan-status-badge" class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-extrabold bg-emerald-950 border border-emerald-800 text-emerald-300 inline-block">
               READY TO BUY
             </span>
           </div>
         </div>
 
         <!-- 5-Factor Quantitative Matrix -->
-        <div class="space-y-2">
-          <div class="text-xs font-bold text-slate-400 flex items-center justify-between">
+        <div class="space-y-1.5 sm:space-y-2">
+          <div class="text-[11px] sm:text-xs font-bold text-slate-400 flex items-center justify-between">
             <span>5-FACTOR CONFLUENCE BREAKDOWN:</span>
-            <span class="text-[11px] text-cyan-400 font-normal">Maksimal 100 Poin</span>
+            <span class="text-[10px] sm:text-[11px] text-cyan-400 font-normal">Maksimal 100 Poin</span>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-            <div class="p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
-              <span class="text-[10px] text-slate-500 block">Trend &amp; MA</span>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 sm:gap-2 text-center text-xs">
+            <div class="p-2 sm:p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
+              <span class="text-[9px] sm:text-[10px] text-slate-500 block">Trend &amp; MA</span>
               <span id="m-factor-trend" class="font-bold text-cyan-400">22 / 25</span>
             </div>
-            <div class="p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
-              <span class="text-[10px] text-slate-500 block">RSI Momentum</span>
+            <div class="p-2 sm:p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
+              <span class="text-[9px] sm:text-[10px] text-slate-500 block">RSI Momentum</span>
               <span id="m-factor-momentum" class="font-bold text-cyan-400">20 / 25</span>
             </div>
-            <div class="p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
-              <span class="text-[10px] text-slate-500 block">Support Proximity</span>
+            <div class="p-2 sm:p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
+              <span class="text-[9px] sm:text-[10px] text-slate-500 block">Support Proximity</span>
               <span id="m-factor-support" class="font-bold text-cyan-400">25 / 25</span>
             </div>
-            <div class="p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
-              <span class="text-[10px] text-slate-500 block">Volume Flow</span>
+            <div class="p-2 sm:p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
+              <span class="text-[9px] sm:text-[10px] text-slate-500 block">Volume Flow</span>
               <span id="m-factor-volume" class="font-bold text-cyan-400">12 / 15</span>
             </div>
-            <div class="p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
-              <span class="text-[10px] text-slate-500 block">Risk/Reward</span>
+            <div class="p-2 sm:p-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d] col-span-2 sm:col-span-1">
+              <span class="text-[9px] sm:text-[10px] text-slate-500 block">Risk/Reward</span>
               <span id="m-factor-rr" class="font-bold text-cyan-400">8 / 10</span>
             </div>
           </div>
         </div>
 
         <!-- Tactical Recommendation Paragraph -->
-        <div class="p-4 rounded-xl bg-[#12151c] border border-[#2a2e3d] space-y-1">
-          <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block">Rekomendasi Taktis:</span>
+        <div class="p-3 sm:p-4 rounded-xl bg-[#12151c] border border-[#2a2e3d] space-y-1">
+          <span class="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wider block">Rekomendasi Taktis:</span>
           <p id="m-plan-tactical-text" class="text-xs text-slate-200 font-sans leading-relaxed"></p>
-          <p id="m-plan-tactical-sub" class="text-[11px] text-slate-500 font-sans"></p>
+          <p id="m-plan-tactical-sub" class="text-[10px] sm:text-[11px] text-slate-500 font-sans"></p>
         </div>
 
         <!-- 4-Column Execution Matrix -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div class="p-3 rounded-lg bg-[#12151c] border border-cyan-900/60">
-            <span class="text-[10px] text-cyan-400 uppercase font-bold block">Zona Beli (Entry)</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center">
+          <div class="p-2.5 sm:p-3 rounded-lg bg-[#12151c] border border-cyan-900/60">
+            <span class="text-[9px] sm:text-[10px] text-cyan-400 uppercase font-bold block">Zona Beli (Entry)</span>
             <span id="m-plan-entry" class="text-xs sm:text-sm font-bold text-white font-mono">-</span>
           </div>
-          <div class="p-3 rounded-lg bg-[#12151c] border border-emerald-900/60">
-            <span class="text-[10px] text-emerald-400 uppercase font-bold block">Target 1 (TP1)</span>
+          <div class="p-2.5 sm:p-3 rounded-lg bg-[#12151c] border border-emerald-900/60">
+            <span class="text-[9px] sm:text-[10px] text-emerald-400 uppercase font-bold block">Target 1 (TP1)</span>
             <span id="m-plan-tp1" class="text-xs sm:text-sm font-bold text-emerald-300 font-mono">-</span>
-            <span id="m-plan-tp1-pct" class="text-[10px] text-emerald-400 block font-mono">+7.0%</span>
+            <span id="m-plan-tp1-pct" class="text-[9px] sm:text-[10px] text-emerald-400 block font-mono">+7.0%</span>
           </div>
-          <div class="p-3 rounded-lg bg-[#12151c] border border-emerald-900/60">
-            <span class="text-[10px] text-emerald-400 uppercase font-bold block">Target 2 (TP2)</span>
+          <div class="p-2.5 sm:p-3 rounded-lg bg-[#12151c] border border-emerald-900/60">
+            <span class="text-[9px] sm:text-[10px] text-emerald-400 uppercase font-bold block">Target 2 (TP2)</span>
             <span id="m-plan-tp2" class="text-xs sm:text-sm font-bold text-emerald-300 font-mono">-</span>
-            <span id="m-plan-tp2-pct" class="text-[10px] text-emerald-400 block font-mono">+15.0%</span>
+            <span id="m-plan-tp2-pct" class="text-[9px] sm:text-[10px] text-emerald-400 block font-mono">+15.0%</span>
           </div>
-          <div class="p-3 rounded-lg bg-[#12151c] border border-rose-900/60">
-            <span class="text-[10px] text-rose-400 uppercase font-bold block">Stop Loss (SL)</span>
+          <div class="p-2.5 sm:p-3 rounded-lg bg-[#12151c] border border-rose-900/60">
+            <span class="text-[9px] sm:text-[10px] text-rose-400 uppercase font-bold block">Stop Loss (SL)</span>
             <span id="m-plan-sl" class="text-xs sm:text-sm font-bold text-rose-300 font-mono">-</span>
-            <span id="m-plan-sl-pct" class="text-[10px] text-rose-400 block font-mono">-4.0%</span>
+            <span id="m-plan-sl-pct" class="text-[9px] sm:text-[10px] text-rose-400 block font-mono">-4.0%</span>
           </div>
         </div>
 
         <!-- Risk to Reward Summary -->
-        <div class="flex items-center justify-between p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-xs">
+        <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-xs">
           <span id="m-plan-rr" class="font-bold text-slate-300">R/R = 1 : 2.5</span>
-          <div class="flex items-center gap-4 text-[11px]">
+          <div class="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-[11px]">
             <span class="text-rose-400">Resiko: <strong id="m-plan-risk-val">-</strong></span>
             <span class="text-emerald-400">Potensi Reward: <strong id="m-plan-reward-val">+</strong></span>
           </div>
         </div>
 
         <!-- Visual Price Slider Spectrum -->
-        <div class="p-4 rounded-xl bg-[#12151c] border border-[#2a2e3d] space-y-3">
+        <div class="p-3 sm:p-4 rounded-xl bg-[#12151c] border border-[#2a2e3d] space-y-2.5 sm:space-y-3">
           <div class="flex items-center justify-between text-xs">
-            <span class="font-bold text-slate-300">VISUAL PRICE SLIDER &amp; SPECTRUM</span>
-            <span id="m-plan-slider-diff" class="font-mono text-[11px] text-cyan-400"></span>
+            <span class="font-bold text-slate-300 text-[11px] sm:text-xs">VISUAL PRICE SLIDER &amp; SPECTRUM</span>
+            <span id="m-plan-slider-diff" class="font-mono text-[10px] sm:text-[11px] text-cyan-400"></span>
           </div>
 
           <!-- The Range Bar -->
-          <div class="relative h-3 rounded-full bg-slate-900 border border-[#2a2e3d] overflow-visible my-4">
+          <div class="relative h-3 rounded-full bg-slate-900 border border-[#2a2e3d] overflow-visible my-3 sm:my-4">
             <div class="absolute left-0 top-0 bottom-0 w-[20%] bg-rose-500/20 rounded-l-full"></div>
             <div class="absolute left-[20%] top-0 bottom-0 w-[30%] bg-cyan-500/30"></div>
             <div class="absolute left-[50%] top-0 bottom-0 w-[50%] bg-emerald-500/20 rounded-r-full"></div>
             
-            <div id="m-slider-marker" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-cyan-400 shadow-lg" style="left: 35%;">
-              <span id="m-slider-marker-label" class="absolute -top-7 left-1/2 -translate-x-1/2 text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 whitespace-nowrap">
+            <div id="m-slider-marker" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-white border-2 border-cyan-400 shadow-lg" style="left: 35%;">
+              <span id="m-slider-marker-label" class="absolute -top-6 sm:-top-7 left-1/2 -translate-x-1/2 text-[8px] sm:text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 whitespace-nowrap">
                 Current
               </span>
             </div>
           </div>
 
-          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1">
+          <div class="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400 font-mono pt-1">
             <span>SL: <strong id="m-slider-val-sl" class="text-rose-400">-</strong></span>
             <span>ENTRY: <strong id="m-slider-val-entry" class="text-cyan-400">-</strong></span>
             <span>TP1: <strong id="m-slider-val-tp1" class="text-emerald-400">-</strong></span>
@@ -900,49 +900,49 @@
         </div>
 
         <!-- Warning / Confirmation Telemetry Box -->
-        <div id="m-plan-warning-box" class="rounded-xl bg-emerald-950/20 border border-emerald-900/50 p-3.5 flex items-start gap-3">
+        <div id="m-plan-warning-box" class="rounded-xl bg-emerald-950/20 border border-emerald-900/50 p-3 sm:p-3.5 flex items-start gap-2.5 sm:gap-3">
           <i id="m-plan-warning-icon" data-lucide="shield-check" class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0"></i>
           <div class="space-y-0.5">
             <h5 id="m-plan-warning-title" class="text-xs font-bold text-white">Konfirmasi Indikator &amp; Resiko</h5>
-            <p id="m-plan-warning-desc" class="text-[11px] text-slate-300 font-sans leading-relaxed"></p>
+            <p id="m-plan-warning-desc" class="text-[10px] sm:text-[11px] text-slate-300 font-sans leading-relaxed"></p>
           </div>
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-[#2a2e3d]">
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-end gap-2 pt-2 border-t border-[#2a2e3d]">
           <button
             onclick="openLotCalculatorModal()"
-            class="px-3 py-2 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] text-cyan-400 text-xs font-bold transition flex items-center gap-1.5"
+            class="px-2.5 sm:px-3 py-2 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] text-cyan-400 text-xs font-bold transition flex items-center justify-center gap-1.5"
           >
             <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
-            <span>Kalkulator Lot</span>
+            <span>Kalkulator</span>
           </button>
           <button
             onclick="handleSetStockAlert()"
-            class="px-3 py-2 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] text-amber-400 text-xs font-bold transition flex items-center gap-1.5"
+            class="px-2.5 sm:px-3 py-2 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] text-amber-400 text-xs font-bold transition flex items-center justify-center gap-1.5"
           >
             <i data-lucide="bell" class="w-3.5 h-3.5"></i>
-            <span>Set Price Alert</span>
+            <span>Set Alert</span>
           </button>
           <button
             onclick="handleSendToJournal()"
-            class="px-3 py-2 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] text-slate-200 text-xs font-bold transition flex items-center gap-1.5"
+            class="px-2.5 sm:px-3 py-2 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
           >
             <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-            <span>Buat Jurnal</span>
+            <span>Jurnal</span>
           </button>
           <button
             onclick="handleShareTradingPlan()"
-            class="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow-md"
+            class="px-3 sm:px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md col-span-2 sm:col-span-1"
           >
             <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-            <span>Salin Trading Plan</span>
+            <span>Salin Plan</span>
           </button>
         </div>
       </div>
 
       <!-- Modal Tab View 2: Multi-Chart -->
-      <div id="modal-view-chart" class="hidden p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 font-mono">
+      <div id="modal-view-chart" class="hidden p-3 sm:p-5 overflow-y-auto min-h-0 space-y-4 flex-1 font-mono overscroll-contain">
         <div class="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-xs text-slate-400 mr-2 font-bold">TIMEFRAME:</span>
@@ -1042,7 +1042,7 @@
       </div>
 
       <!-- Modal Tab View 3: IDX News -->
-      <div id="modal-view-news" class="hidden p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+      <div id="modal-view-news" class="hidden p-3 sm:p-5 overflow-y-auto min-h-0 space-y-4 flex-1 overscroll-contain">
         <div class="flex items-center justify-between p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d] font-mono text-xs">
           <div class="flex items-center gap-2">
             <i data-lucide="radio" class="w-4 h-4 text-cyan-400"></i>
