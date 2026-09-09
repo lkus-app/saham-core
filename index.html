@@ -219,7 +219,6 @@
           <div>
             <div class="flex items-center gap-2">
               <span class="text-sm sm:text-base font-extrabold text-white tracking-tight">IDX Quant Analyst</span>
-              <!-- Header Role Badge -->
               <span id="role-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase border">
                 ROLE BADGE
               </span>
@@ -246,7 +245,6 @@
 
         <!-- Right Side Nav Actions -->
         <div class="flex items-center gap-2 font-mono">
-          <!-- Admin Only: Add Member Button -->
           <button id="btn-open-add-member" onclick="openAddMemberModal()" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/50 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold text-xs transition">
             <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
             <span class="hidden sm:inline">+ Tambah Member</span>
@@ -731,7 +729,6 @@
 
             <!-- Slider Container Track -->
             <div class="relative pt-7 pb-2">
-              <!-- Horizontal base bar -->
               <div class="h-3 w-full rounded-full bg-slate-950 border border-slate-800 relative overflow-hidden flex">
                 <div class="h-full bg-rose-500/40 w-[20%] border-r border-rose-500"></div>
                 <div class="h-full bg-amber-500/30 w-[25%] border-r border-amber-500"></div>
@@ -788,7 +785,6 @@
         <!-- TAB 2: CHART (MULTI-CHART TECHNICAL ENGINE)  -->
         <!-- ============================================ -->
         <div id="modal-view-chart" class="hidden space-y-4">
-          <!-- Timeframe & MA Legend -->
           <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-slate-800/80">
             <div class="flex items-center gap-1.5" id="modal-tf-buttons">
               <button onclick="updateChartTimeframe('1M')" data-tf="1M" class="tf-pill px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">1 BULAN</button>
@@ -905,25 +901,21 @@
       <!-- 4. BOTTOM ACTION BAR -->
       <div class="p-4 border-t border-slate-800/90 bg-[#090e1a] shrink-0 flex flex-wrap items-center justify-between gap-2.5">
         <div class="flex flex-wrap items-center gap-2">
-          <!-- Button 1: Set Alert -->
           <button onclick="handleSetStockAlert()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition border border-slate-700">
             <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i>
             <span>Set Alert</span>
           </button>
 
-          <!-- Button 2: Kalkulator Lot / MM -->
           <button onclick="openLotCalculatorModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition border border-slate-700">
             <i data-lucide="calculator" class="w-3.5 h-3.5 text-cyan-400"></i>
             <span>Kalkulator Lot / MM</span>
           </button>
 
-          <!-- Button 3: Ke Jurnal Trading -->
           <button onclick="handleSendToJournal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition border border-slate-700">
             <i data-lucide="book-open" class="w-3.5 h-3.5 text-emerald-400"></i>
             <span>Ke Jurnal Trading</span>
           </button>
 
-          <!-- Button 4: Share Setup -->
           <button onclick="handleShareTradingPlan()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow-lg shadow-emerald-500/20">
             <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
             <span>Share Setup</span>
@@ -1149,14 +1141,12 @@
 
     // Expanded Liquid Stocks IDX Dictionary (220+ Emiten Aktif BEI)
     const POPULAR_NAMES = {
-      // Big Caps & Perbankan
       BBCA: "Bank Central Asia Tbk", BBRI: "Bank Rakyat Indonesia Tbk", BMRI: "Bank Mandiri Tbk",
       BBNI: "Bank Negara Indonesia Tbk", BRIS: "Bank Syariah Indonesia Tbk", BBTN: "Bank Tabungan Negara Tbk",
       BDMN: "Bank Danamon Tbk", BJBR: "Bank BJB Tbk", BJTM: "Bank Jatim Tbk", BNGA: "Bank CIMB Niaga Tbk",
       PNBN: "Bank Pan Indonesia Tbk", NISP: "Bank OCBC NISP Tbk", ARTO: "Bank Jago Tbk",
       BBYB: "Bank Neo Commerce Tbk", BANK: "Bank Aladin Syariah Tbk", AGRO: "Bank Raya Indonesia Tbk",
       BBHI: "Allo Bank Indonesia Tbk", BTPS: "Bank BTPN Syariah Tbk", BNII: "Bank Maybank Indonesia Tbk",
-      // Energi, Batubara & Migas
       ADRO: "Adaro Energy Indonesia Tbk", PTBA: "Bukit Asam Tbk", ITMG: "Indo Tambangraya Megah Tbk",
       MEDC: "Medco Energi Internasional Tbk", PGAS: "Perusahaan Gas Negara Tbk", AKRA: "AKR Corporindo Tbk",
       BUMI: "Bumi Resources Tbk", ENRG: "Energi Mega Persada Tbk", DOID: "Delta Dunia Makmur Tbk",
@@ -1166,26 +1156,21 @@
       ELSA: "Elnusa Tbk", RAJA: "Rukun Raharja Tbk", APEX: "Apexindo Pratama Duta Tbk",
       PGEO: "Pertamina Geothermal Energy Tbk", CUAN: "Petrindo Jaya Kreasi Tbk", DEWA: "Darma Henwa Tbk",
       PTRO: "Petrosea Tbk", SGER: "Sumber Global Energy Tbk", RMKE: "RMK Energy Tbk",
-      // Mineral, Tambang & Logam
       AMMN: "Amman Mineral Internasional Tbk", ANTM: "Aneka Tambang Tbk", INCO: "Vale Indonesia Tbk",
       MDKA: "Merdeka Copper Gold Tbk", MBMA: "Merdeka Battery Materials Tbk", NCKL: "Trimegah Bangun Persada Tbk",
       BRMS: "Bumi Resources Minerals Tbk", PSAB: "J Resources Asia Pasifik Tbk", TINS: "Timah Tbk",
       DKFT: "Central Omega Resources Tbk", NICL: "PAM Mineral Tbk", CITA: "Cita Mineral Investindo Tbk",
       ZINC: "Kapuas Prima Coal Tbk", ARCI: "Archi Indonesia Tbk", HRTA: "Hartadinata Abadi Tbk",
-      // Petrokimia & Energi Terbarukan
       BREN: "Barito Renewables Energy Tbk", BRPT: "Barito Pacific Tbk", TPIA: "Chandra Asri Pacific Tbk",
       ESSA: "Essa Industries Indonesia Tbk", KEEN: "Kencana Energi Lestari Tbk", ARKO: "Arkora Hydro Tbk",
       POWR: "Cikarang Listrindo Tbk",
-      // Telekomunikasi & Infrastruktur
       TLKM: "Telkom Indonesia Tbk", ISAT: "Indosat Ooredoo Hutchison Tbk", EXCL: "XL Axiata Tbk",
       TOWR: "Sarana Menara Nusantara Tbk", MTEL: "Dayamitra Telekomunikasi Tbk", TBIG: "Tower Bersama Infrastructure Tbk",
       WIFI: "Solusi Sinergi Digital Tbk", JSMR: "Jasa Marga Tbk", META: "Nusantara Infrastructure Tbk",
-      // Otomotif & Alat Berat
       ASII: "Astra International Tbk", UNTR: "United Tractors Tbk", HEXA: "Hexindo Adiperkasa Tbk",
       AUTO: "Astra Otoparts Tbk", SMSM: "Selamat Sempurna Tbk", DRMA: "Dharma Polimetal Tbk",
       GJTL: "Gajah Tunggal Tbk", ASSA: "Adi Sarana Armada Tbk", BIRD: "Blue Bird Tbk",
       MPMX: "Mitra Pinasthika Mustika Tbk",
-      // Konsumer & Retail
       ICBP: "Indofood CBP Sukses Makmur Tbk", INDF: "Indofood Sukses Makmur Tbk", UNVR: "Unilever Indonesia Tbk",
       MYOR: "Mayora Indah Tbk", SIDO: "Industri Jamu Sido Muncul Tbk", CMRY: "Cisarua Mountain Dairy Tbk",
       ULTJ: "Ultra Jaya Milk Tbk", ROTI: "Nippon Indosari Corpindo Tbk", CLEO: "Sariguna Primatirta Tbk",
@@ -1193,29 +1178,24 @@
       MIDI: "Midi Utama Indonesia Tbk", ACES: "Aspirasi Hidup Indonesia Tbk", MAPI: "Mitra Adiperkasa Tbk",
       MAPA: "MAP Aktif Adiperkasa Tbk", ERAA: "Erajaya Swasembada Tbk", LPPF: "Matahari Department Store Tbk",
       RALS: "Ramayana Lestari Sentosa Tbk", HMSP: "HM Sampoerna Tbk", GGRM: "Gudang Garam Tbk", WIIM: "Wismilak Inti Makmur Tbk",
-      // Perkebunan & CPO
       AALI: "Astra Agro Lestari Tbk", LSIP: "PP London Sumatra Tbk", DSNG: "Dharma Satya Nusantara Tbk",
       TAPG: "Triputra Agro Persada Tbk", SSMS: "Sawit Sumbermas Sarana Tbk", SIMP: "Salim Ivomas Pratama Tbk",
       STAA: "Sumber Tani Agung Resources Tbk", BWPT: "Eagle High Plantations Tbk",
-      // Properti & Real Estate
       PANI: "Pantai Indah Kapuk Dua Tbk", BSDE: "Bumi Serpong Damai Tbk", CTRA: "Ciputra Development Tbk",
       PWON: "Pakuwon Jati Tbk", SMRA: "Summarecon Agung Tbk", ASRI: "Alam Sutera Realty Tbk",
       KIJA: "Kawasan Industri Jababeka Tbk", DMAS: "Puradelta Lestari Tbk", SSIA: "Surya Semesta Internusa Tbk",
       DILD: "Intiland Development Tbk", LPKR: "Lippo Karawaci Tbk", LPCK: "Lippo Cikarang Tbk",
-      // Konstruksi & Semen
       SMGR: "Semen Indonesia Tbk", INTP: "Indocement Tunggal Prakarsa Tbk", PTPP: "PP (Persero) Tbk",
       WIKA: "Wijaya Karya Tbk", ADHI: "Adhi Karya Tbk", WEGE: "Wijaya Karya Bangunan Gedung Tbk",
       TOTL: "Total Bangun Persada Tbk",
-      // Teknologi, Media & Digital
       GOTO: "GoTo Gojek Tokopedia Tbk", BUKA: "Bukalapak.com Tbk", EMTK: "Elang Mahkota Teknologi Tbk",
       SCMA: "Surya Citra Media Tbk", MNCN: "Media Nusantara Citra Tbk", FILM: "MD Pictures Tbk",
-      // Farmasi & Rumah Sakit
       KLBF: "Kalbe Farma Tbk", MIKA: "Mitra Keluarga Karyasehat Tbk", SILO: "Siloam International Hospitals Tbk",
       HEAL: "Medikaloka Hermina Tbk", SAME: "Sarana Meditama Metropolitan Tbk", PRDA: "Prodia Widyahusada Tbk",
-      // Logistik & Perkapalan
       SMDR: "Samudera Indonesia Tbk", TMAS: "Temas Tbk", SOCI: "Soechi Lines Tbk",
       HAIS: "Hasnur Internasional Shipping Tbk", WINS: "Wintermar Offshore Marine Tbk",
-      BULL: "Buana Lintas Lautan Tbk", SHIP: "Silomarine Internasional Tbk"
+      BULL: "Buana Lintas Lautan Tbk", SHIP: "Silomarine Internasional Tbk",
+      NTBK: "Nusatama Berkah Tbk"
     };
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -1404,12 +1384,11 @@
             name: data.name || name,
             email: data.email || email,
             role: data.role || (email.includes('admin') ? 'admin' : 'user'),
-            expiredDate: data.expiredDate || '08 Okt 2026',
+            expiredDate: data.expired_at || data.expiredDate || '08 Okt 2026',
             token: data.token || 'gauth-token-' + Date.now()
           });
           showToast(`Selamat datang, ${name}! Akses VIP Aktif.`);
         } else {
-          // Fallback jika Google Auth didaftarkan instan
           saveSession({
             name: name,
             email: email,
@@ -1420,7 +1399,6 @@
           showToast(`Berhasil masuk via Google Account (${email})`);
         }
       } catch (err) {
-        // Safe fallback offline/mock
         saveSession({
           name: name,
           email: email,
@@ -1461,7 +1439,7 @@
             name: data.name || email.split('@')[0],
             email: data.email || email,
             role: data.role || (email.includes('admin') ? 'admin' : 'user'),
-            expiredDate: data.expiredDate || '08 Okt 2026',
+            expiredDate: data.expired_at || data.expiredDate || '08 Okt 2026',
             token: data.token
           });
           showToast(`Login berhasil! Selamat datang.`);
@@ -1503,7 +1481,7 @@
             name: name,
             email: email,
             role: data.role || 'user',
-            expiredDate: '08 Okt 2026',
+            expiredDate: data.expired_at || data.expiredDate || '08 Okt 2026',
             token: data.token
           });
           showToast('Akun VIP berhasil terdaftar! Selamat datang.');
@@ -1557,7 +1535,7 @@
           showToast(`Berhasil menambah/memperpanjang member ${name} (${duration_days} Hari)!`);
           closeAddMemberModal();
         } else {
-          showToast(data.message || `Member ${name} berhasil didaftarkan di sistem lokal!`);
+          showToast(data.message || `Member ${name} berhasil didaftarkan!`);
           closeAddMemberModal();
         }
       } catch (err) {
@@ -1614,90 +1592,64 @@
     function normalizeStockItem(s) {
       const ticker = (s.ticker || '').toUpperCase().trim();
       
-      // Close / Price
       let rawClose = s.close ?? s.price ?? s.regularMarketPrice ?? 0;
       let close = Number(rawClose) || 0;
 
-      // Change %
       let rawChg = s.changePct ?? s.change_pct ?? s.change_percent ?? s.changePercent ?? s.change;
       let change = 0;
       if (rawChg !== undefined && rawChg !== null && !isNaN(Number(rawChg))) {
         change = parseFloat(Number(rawChg).toFixed(2));
       }
 
-      // Check if we have live real-time overlay from Yahoo Finance cache
       if (realTimeQuotesCache[ticker]) {
         const live = realTimeQuotesCache[ticker];
-        if (typeof live.price === 'number' && live.price > 0) {
-          close = live.price;
-        }
-        if (typeof live.changePct === 'number') {
-          change = parseFloat(live.changePct.toFixed(2));
-        }
+        if (typeof live.price === 'number' && live.price > 0) close = live.price;
+        if (typeof live.changePct === 'number') change = parseFloat(live.changePct.toFixed(2));
       }
 
-      // RSI (14)
       let rawRsi = s.rsi ?? s.rsi_14 ?? s.rsi14;
       let rsi = 50;
       if (rawRsi !== undefined && rawRsi !== null && !isNaN(Number(rawRsi))) {
         rsi = parseFloat(Number(rawRsi).toFixed(1));
       } else {
-        // Deterministic realistic RSI based on change and ticker
         rsi = parseFloat((48 + (change * 3.5)).toFixed(1));
         if (rsi > 88) rsi = 88.0;
         if (rsi < 22) rsi = 22.0;
       }
 
-      // Moving Averages
       const ma20 = Number(s.ma20) || Math.round(close * 0.985);
       const ma50 = Number(s.ma50) || Math.round(close * 0.965);
       const ma200 = Number(s.ma200) || Math.round(close * 0.935);
 
-      // MA Trend Status
       let maStatus = s.maStatus;
       if (!maStatus || typeof maStatus !== 'string' || maStatus === 'undefined') {
-        if (close > ma20 && ma20 > ma50) {
-          maStatus = "BULLISH > MA20";
-        } else if (close < ma20 && close >= ma50) {
-          maStatus = "MA20 PULLBACK";
-        } else if (close < ma50 && close >= ma200) {
-          maStatus = "MA50 SUPPORT";
-        } else if (rsi < 38) {
-          maStatus = "OVERSOLD BOUNCE";
-        } else if (close > ma20) {
-          maStatus = "UPTREND > MA20";
-        } else {
-          maStatus = "CONSOLIDATION";
-        }
+        if (close > ma20 && ma20 > ma50) maStatus = "BULLISH > MA20";
+        else if (close < ma20 && close >= ma50) maStatus = "MA20 PULLBACK";
+        else if (close < ma50 && close >= ma200) maStatus = "MA50 SUPPORT";
+        else if (rsi < 38) maStatus = "OVERSOLD BOUNCE";
+        else if (close > ma20) maStatus = "UPTREND > MA20";
+        else maStatus = "CONSOLIDATION";
       }
 
-      // MACD Signal
       let macdSignal = "NEUTRAL";
       if (typeof s.macdSignal === 'string' && s.macdSignal.length > 2 && s.macdSignal !== 'undefined') {
         macdSignal = s.macdSignal.toUpperCase();
       } else {
         const mLine = Number(s.macd ?? 0);
         const sLine = Number(s.macd_signal ?? s.macdSignal ?? 0);
-        if (mLine > sLine || change > 0.5) {
-          macdSignal = "BULLISH CROSS";
-        } else if (mLine < sLine || change < -0.5) {
-          macdSignal = "BEARISH REVERSAL";
-        } else {
-          macdSignal = "NEUTRAL";
-        }
+        if (mLine > sLine || change > 0.5) macdSignal = "BULLISH CROSS";
+        else if (mLine < sLine || change < -0.5) macdSignal = "BEARISH REVERSAL";
+        else macdSignal = "NEUTRAL";
       }
 
-      // Dividend Yield
       let rawDiv = s.dividendYield ?? s.dividend_yield ?? s.div_yield;
       let dividendYield = 0;
       if (rawDiv !== undefined && rawDiv !== null && !isNaN(Number(rawDiv))) {
         dividendYield = parseFloat(Number(rawDiv).toFixed(1));
       }
 
-      // Support Level
       let support = Number(s.support ?? s.support_lvl ?? s.supportLvl) || Math.round(close * 0.96);
 
-      // Volume Formatting
       let rawVol = s.volume ?? s.turnover ?? s.value_idr ?? 0;
       if (realTimeQuotesCache[ticker] && realTimeQuotesCache[ticker].volume) {
         rawVol = realTimeQuotesCache[ticker].volume;
@@ -1708,17 +1660,11 @@
         formattedVolume = rawVol;
       } else {
         const numVol = Number(rawVol) || 0;
-        if (numVol >= 1_000_000_000) {
-          formattedVolume = `${(numVol / 1_000_000_000).toFixed(2)} B`;
-        } else if (numVol >= 1_000_000) {
-          formattedVolume = `${(numVol / 1_000_000).toFixed(1)} M`;
-        } else if (numVol >= 1_000) {
-          formattedVolume = `${(numVol / 1_000).toFixed(0)} K`;
-        } else if (numVol > 0) {
-          formattedVolume = numVol.toLocaleString('id-ID');
-        } else {
-          formattedVolume = `${(15 + (ticker.charCodeAt(0) % 40)).toFixed(1)} M`;
-        }
+        if (numVol >= 1_000_000_000) formattedVolume = `${(numVol / 1_000_000_000).toFixed(2)} B`;
+        else if (numVol >= 1_000_000) formattedVolume = `${(numVol / 1_000_000).toFixed(1)} M`;
+        else if (numVol >= 1_000) formattedVolume = `${(numVol / 1_000).toFixed(0)} K`;
+        else if (numVol > 0) formattedVolume = numVol.toLocaleString('id-ID');
+        else formattedVolume = `${(15 + (ticker.charCodeAt(0) % 40)).toFixed(1)} M`;
       }
 
       const company = s.company || s.name || s.company_name || POPULAR_NAMES[ticker] || `${ticker} Pratama Tbk`;
@@ -1746,18 +1692,8 @@
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
       try {
-        // Try proxy first to avoid browser CORS / redirect blocks
         let fetchedData = null;
         try {
-          const resProxy = await fetch(`/api/apps-script?action=screener&filter=${filter}`, { signal: AbortSignal.timeout(6000) });
-          if (resProxy.ok) {
-            const data = await resProxy.json();
-            if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-              fetchedData = data.data;
-            }
-          }
-        } catch (errProxy) {
-          // Fallback to direct Apps Script URL
           const resDirect = await fetch(`${API_URL}?action=screener&filter=${filter}`, { signal: AbortSignal.timeout(6000) });
           if (resDirect.ok) {
             const data = await resDirect.json();
@@ -1765,7 +1701,7 @@
               fetchedData = data.data;
             }
           }
-        }
+        } catch (err) {}
 
         if (fetchedData && fetchedData.length > 0) {
           allStocks = fetchedData.map(normalizeStockItem);
@@ -1773,12 +1709,10 @@
           generateSeedStocks();
         }
       } catch (e) {
-        console.warn('Fallback ke bank 155 emiten ber-katalog:', e);
         generateSeedStocks();
       } finally {
         if (refreshIcon) refreshIcon.classList.remove('animate-spin');
         
-        // Update timestamp
         const timeElem = document.getElementById('last-update-time');
         if (timeElem) {
           const now = new Date();
@@ -1786,41 +1720,9 @@
         }
 
         renderScreenerTable();
-
-        // Background fetch live market quotes from IDX (Yahoo Finance feed)
-        fetchLiveMarketQuotes();
       }
     }
 
-    async function fetchLiveMarketQuotes() {
-      try {
-        const topTickers = 'BBCA,BBRI,BMRI,BBNI,ASII,TLKM,ADRO,PTBA,AMMN,BREN,ANTM,GOTO,KLBF,BRIS,UNTR,CPIN,MEDC,PGAS,BRPT,ICBP,INDF,INCO,MDKA,MBMA,ACES,SMGR,INKP,MAPI,TPIA,PGEO,CUAN,BUMI,DEWA,ENRG,DOID,BUKA,ARTO,PTRO,ESSA,MAPA,HRUM,AKRA,TOWR,MTEL,MYOR,SIDO,EXCL,ISAT,BBTN,BDMN,BJBR,BJTM,JPFA,INTP,PWON,BSDE,CTRA,SMRA';
-        const res = await fetch(`/api/market-data?tickers=${topTickers}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.status === 'ok' && json.data) {
-            realTimeQuotesCache = { ...realTimeQuotesCache, ...json.data };
-            
-            // Re-normalize allStocks to reflect latest live quotes
-            allStocks = allStocks.map(normalizeStockItem);
-            renderScreenerTable();
-
-            const statusBadge = document.getElementById('feed-status-badge');
-            if (statusBadge) {
-              statusBadge.classList.remove('bg-amber-950/70', 'border-amber-800/80', 'text-amber-300');
-              statusBadge.classList.add('bg-emerald-950/70', 'border-emerald-800/80', 'text-emerald-300');
-              statusBadge.querySelector('span:nth-child(2)').textContent = 'FEED LIVE BEI AKTIF';
-            }
-          }
-        }
-      } catch (e) {
-        // Silently preserve existing data
-      }
-    }
-
-    // =================================================================
-    // CUSTOM STOCKS / WATCHLIST MANAGEMENT (USER CAN ADD ANY EMITEN)
-    // =================================================================
     function getStoredCustomStocks() {
       try {
         const raw = localStorage.getItem('idx_custom_user_stocks');
@@ -1835,9 +1737,7 @@
         const list = getStoredCustomStocks().filter(s => s.ticker !== stockObj.ticker);
         list.unshift(stockObj);
         localStorage.setItem('idx_custom_user_stocks', JSON.stringify(list));
-      } catch (e) {
-        console.error("Error saving custom stock:", e);
-      }
+      } catch (e) {}
     }
 
     function openAddCustomStockModal(prefilledTicker = '') {
@@ -1845,10 +1745,8 @@
       if (!modal) return;
       modal.classList.remove('hidden');
       const tickerInput = document.getElementById('custom-stock-ticker');
-      const compInput = document.getElementById('custom-stock-company');
       const priceInput = document.getElementById('custom-stock-price');
       const chgInput = document.getElementById('custom-stock-chg');
-      const supportInput = document.getElementById('custom-stock-support');
 
       if (prefilledTicker && tickerInput) {
         tickerInput.value = prefilledTicker.toUpperCase();
@@ -1868,9 +1766,7 @@
       const t = String(ticker || '').trim().toUpperCase();
       const compInput = document.getElementById('custom-stock-company');
       if (!compInput) return;
-      if (POPULAR_NAMES[t]) {
-        compInput.value = POPULAR_NAMES[t];
-      }
+      if (POPULAR_NAMES[t]) compInput.value = POPULAR_NAMES[t];
     }
 
     function handleSaveCustomStock(e) {
@@ -1883,10 +1779,7 @@
       const sectorInput = document.getElementById('custom-stock-sector');
 
       const ticker = (tickerInput ? tickerInput.value.trim().toUpperCase() : '');
-      if (!ticker) {
-        showToast("Mohon masukkan kode ticker saham!", "error");
-        return;
-      }
+      if (!ticker) return;
 
       const closePrice = parseInt(priceInput ? priceInput.value : '1000') || 1000;
       const chgPct = parseFloat(chgInput ? chgInput.value : '0') || 0;
@@ -1912,21 +1805,14 @@
         isCustom: true
       };
 
-      // Save to localStorage
       saveCustomStockToStorage(newStock);
-
-      // Prepend to allStocks
       allStocks = allStocks.filter(s => s.ticker !== ticker);
       allStocks.unshift(normalizeStockItem(newStock));
 
-      // Update counters & table
       updateUniverseHeaderCount();
       renderScreenerTable();
-
       closeAddCustomStockModal();
       showToast(`Emiten ${ticker} berhasil ditambahkan ke watchlist!`, "success");
-
-      // Buka modal detail & trading plan untuk emiten baru
       openStockModalByTicker(ticker);
     }
 
@@ -1967,14 +1853,12 @@
       const fullList = [];
       const addedTickers = new Set();
 
-      // 1. Prioritaskan custom stocks yang pernah diinput user
       const customStocks = getStoredCustomStocks();
       customStocks.forEach(item => {
         fullList.push(normalizeStockItem(item));
         addedTickers.add(item.ticker);
       });
 
-      // 2. Muat seluruh katalog POPULAR_NAMES IDX
       const keys = Object.keys(POPULAR_NAMES);
       keys.forEach((ticker, i) => {
         if (addedTickers.has(ticker)) return;
@@ -2005,33 +1889,6 @@
         }));
       });
 
-      // 3. Tambahan ekspansi hingga minimal 250 emiten likuid
-      const targetCount = Math.max(250, keys.length);
-      for (let i = keys.length; i < targetCount; i++) {
-        const ticker = `IDX${i + 1}`;
-        if (addedTickers.has(ticker)) continue;
-        const base = baseTickers[i % baseTickers.length];
-        const price = Math.max(75, Math.round(base.c * (0.4 + (i % 50) * 0.02)));
-        const chg = parseFloat(((base.chg + ((i * 4) % 11) - 5) * 0.6).toFixed(2));
-        const rsi = Math.round(32 + ((base.rsi + (i * 9)) % 44));
-
-        fullList.push(normalizeStockItem({
-          ticker: ticker,
-          company: `PT Dinamika Investama ${ticker} Tbk`,
-          close: price,
-          change: chg,
-          volume: `${(4 + (i % 40)).toFixed(1)} M`,
-          rsi: rsi,
-          ma20: Math.round(price * 0.98),
-          ma50: Math.round(price * 0.95),
-          ma200: Math.round(price * 0.91),
-          maStatus: chg > 0 ? "BULLISH > MA20" : "CONSOLIDATION",
-          macdSignal: chg >= 0 ? "BULLISH CROSS" : "NEUTRAL",
-          support: Math.round(price * 0.95),
-          dividendYield: 2.5
-        }));
-      }
-
       allStocks = fullList;
       updateUniverseHeaderCount();
     }
@@ -2059,22 +1916,7 @@
       if (countDisplay) countDisplay.textContent = filtered.length;
 
       if (filtered.length === 0) {
-        if (currentSearch) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="7" class="text-center py-10 text-slate-400 font-mono space-y-3">
-                <p>Emiten <span class="text-white font-bold text-sm">"${currentSearch.toUpperCase()}"</span> belum ada di daftar screener.</p>
-                <button onclick="openAddCustomStockModal('${currentSearch.toUpperCase()}')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs shadow-lg shadow-sky-500/20 transition">
-                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                  <span>+ Tambahkan ${currentSearch.toUpperCase()} Sekarang</span>
-                </button>
-              </td>
-            </tr>
-          `;
-        } else {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-500 font-mono">Tidak ada emiten yang sesuai dengan filter "${currentFilter}".</td></tr>`;
-        }
-        if (window.lucide) lucide.createIcons();
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-500 font-mono">Tidak ada emiten yang sesuai dengan filter "${currentFilter}".</td></tr>`;
         return;
       }
 
@@ -2087,7 +1929,6 @@
         const chgClass = isPositive ? 'text-emerald-400' : 'text-rose-400';
         const chgSign = isPositive ? '+' : '';
 
-        // Safe formatted values
         const displayClose = (typeof item.close === 'number' && !isNaN(item.close)) ? item.close.toLocaleString('id-ID') : '0';
         const displayChange = (typeof item.change === 'number' && !isNaN(item.change)) ? item.change.toFixed(2) : '0.00';
         const displayRsi = (typeof item.rsi === 'number' && !isNaN(item.rsi)) ? item.rsi : 50;
@@ -2181,7 +2022,6 @@
         }
       });
 
-      // When switching to chart tab, resize chart.js canvases to match container width
       if (tabName === 'chart') {
         setTimeout(() => {
           if (chartPrice) chartPrice.resize();
@@ -2190,7 +2030,6 @@
         }, 50);
       }
 
-      // When switching to news tab, fetch latest disclosures
       if (tabName === 'news') {
         fetchIdxNews(selectedStock ? selectedStock.ticker : 'BBCA');
       }
@@ -2198,65 +2037,80 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    /**
+     * DYNAMIC IDX ANNOUNCEMENTS & EMITEN-SPECIFIC NEWS ENGINE
+     */
     async function fetchIdxNews(ticker) {
       if (!ticker) ticker = selectedStock ? selectedStock.ticker : 'BBCA';
+      const cleanTicker = ticker.toUpperCase().trim();
+      
       const badge = document.getElementById('news-ticker-badge');
-      if (badge) badge.textContent = ticker;
+      if (badge) badge.textContent = cleanTicker;
       
       const loading = document.getElementById('news-loading');
       const list = document.getElementById('news-list');
       if (loading) loading.classList.remove('hidden');
       if (list) list.innerHTML = '';
 
+      let newsData = [];
+
       try {
-        let newsData = [];
+        // 1. Panggil Endpoint Backend Code.gs (action=idx_news)
+        const resp = await fetch(`${API_URL}?action=idx_news&ticker=${encodeURIComponent(cleanTicker)}`, {
+          signal: AbortSignal.timeout(6000)
+        });
+        
+        if (resp.ok) {
+          const json = await resp.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            newsData = json.data.map(item => ({
+              date: item.published_at || item.date || 'Terkini',
+              category: item.title.toLowerCase().includes('laporan') ? 'Laporan Keuangan' : 
+                        item.title.toLowerCase().includes('dividen') || item.title.toLowerCase().includes('rups') ? 'Corporate Action' : 'Keterbukaan IDX',
+              title: item.title,
+              desc: `Pengumuman resmi dan pemberitaan pasar modal terkait aksi korporasi serta kinerja emiten ${cleanTicker}.`,
+              link: item.link || '#',
+              source: item.source || 'Bursa Efek Indonesia'
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn('Apps Script news fetch timeout/error, mencoba fallback live RSS:', e);
+      }
+
+      // 2. Fallback Langsung ke Feed RSS Real-time jika koneksi Apps Script lambat
+      if (!newsData || newsData.length === 0) {
         try {
-          const resp = await fetch(`${API_URL}?action=news&ticker=${encodeURIComponent(ticker)}`, {
-            headers: { 'Accept': 'application/json' }
-          });
-          if (resp.ok) {
-            const json = await resp.json();
-            if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
-              newsData = json.data;
+          const compName = POPULAR_NAMES[cleanTicker] || cleanTicker;
+          const query = encodeURIComponent(`"${compName}" (saham OR dividen OR "laporan keuangan" OR RUPS OR keterbukaan)`);
+          const rssUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(`https://news.google.com/rss/search?q=${query}&hl=id&gl=ID&ceid=ID:id`)}`;
+          
+          const rssResp = await fetch(rssUrl, { signal: AbortSignal.timeout(5000) });
+          if (rssResp.ok) {
+            const rssJson = await rssResp.json();
+            if (rssJson.status === 'ok' && Array.isArray(rssJson.items) && rssJson.items.length > 0) {
+              newsData = rssJson.items.slice(0, 6).map(item => {
+                const cleanTitle = item.title.replace(/\s*-\s*[^-]+$/, '').trim();
+                return {
+                  date: new Date(item.pubDate).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) + ' WIB',
+                  category: cleanTitle.toLowerCase().includes('dividen') || cleanTitle.toLowerCase().includes('rups') ? 'Corporate Action' :
+                            cleanTitle.toLowerCase().includes('laba') || cleanTitle.toLowerCase().includes('kinerja') ? 'Laporan Keuangan' : 'Keterbukaan IDX',
+                  title: cleanTitle,
+                  desc: item.description ? item.description.replace(/<[^>]*>?/gm, '').slice(0, 160) + '...' : `Berita resmi dan aksi korporasi emiten ${cleanTicker}.`,
+                  link: item.link,
+                  source: item.author || 'Media Pasar Modal'
+                };
+              });
             }
           }
-        } catch (e) {
-          console.log("API news endpoint or network delay, generating official disclosure stream:", e);
+        } catch (errRss) {
+          console.warn('RSS Direct fallback error:', errRss);
         }
+      }
 
-        // Standard official IDX disclosure stream if API returns empty
-        if (!newsData || newsData.length === 0) {
-          const now = new Date();
-          const d1 = new Date(now.getTime() - 2 * 3600 * 1000);
-          const d2 = new Date(now.getTime() - 26 * 3600 * 1000);
-          const d3 = new Date(now.getTime() - 72 * 3600 * 1000);
-
-          newsData = [
-            {
-              date: d1.toISOString().slice(0, 10) + ' ' + d1.toTimeString().slice(0, 5) + ' WIB',
-              category: 'Laporan Keuangan',
-              title: `Penyampaian Laporan Keuangan Berkala & Kinerja Operasional Emiten ${ticker}`,
-              desc: `Emiten ${ticker} menyampaikan laporan keuangan konsolidasian triwulanan kepada PT Bursa Efek Indonesia (BEI) dengan pertumbuhan laba operasional dan pendapatan yang terjaga stabil.`,
-              source: 'Keterbukaan Informasi BEI'
-            },
-            {
-              date: d2.toISOString().slice(0, 10) + ' ' + d2.toTimeString().slice(0, 5) + ' WIB',
-              category: 'Corporate Action',
-              title: `Rencana Pelaksanaan Rapat Umum Pemegang Saham (RUPS) & Pembagian Dividen Tunai`,
-              desc: `Direksi perseroan ${ticker} mengumumkan agenda RUPST terkait penetapan alokasi laba ditahan dan rasio dividen tunai tahun buku berjalan untuk seluruh pemegang saham terdaftar.`,
-              source: 'Pengumuman Resmi IDX'
-            },
-            {
-              date: d3.toISOString().slice(0, 10) + ' ' + d3.toTimeString().slice(0, 5) + ' WIB',
-              category: 'Material Event',
-              title: `Laporan Informasi atau Fakta Material Terkait Ekspansi Bisnis & Realisasi Capex`,
-              desc: `Pemberitahuan resmi kepada OJK dan Bursa terkait realisasi penggunaan belanja modal (capex) perseroan guna mendukung optimalisasi margin laba bersih ke depan.`,
-              source: 'Keterbukaan Informasi BEI'
-            }
-          ];
-        }
-
-        if (list) {
+      // 3. Render Hasil ke DOM
+      if (list) {
+        if (newsData && newsData.length > 0) {
           list.innerHTML = newsData.map(item => `
             <div class="rounded-xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 p-4 transition space-y-2">
               <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -2272,22 +2126,22 @@
                 </div>
                 <span class="text-[10px] text-slate-500 font-mono flex items-center gap-1">
                   <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i>
-                  ${item.source || 'Bursa Efek Indonesia'}
+                  ${item.source}
                 </span>
               </div>
-              <h5 class="text-sm font-bold text-white leading-snug">${item.title}</h5>
+              <h5 class="text-sm font-bold text-white leading-snug">
+                ${item.link && item.link !== '#' ? `<a href="${item.link}" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition">${item.title} ↗</a>` : item.title}
+              </h5>
               <p class="text-xs text-slate-300 font-sans leading-relaxed">${item.desc}</p>
             </div>
           `).join('');
+        } else {
+          list.innerHTML = `<div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 text-center font-mono">Belum ada pengumuman keterbukaan informasi baru untuk ${cleanTicker}.</div>`;
         }
-      } catch (err) {
-        if (list) {
-          list.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400 text-center font-mono">Gagal memuat pengumuman: ${err.message}</div>`;
-        }
-      } finally {
-        if (loading) loading.classList.add('hidden');
-        if (window.lucide) lucide.createIcons();
       }
+
+      if (loading) loading.classList.add('hidden');
+      if (window.lucide) lucide.createIcons();
     }
 
     function updateTradingPlanAndTabsUI(stock, chartData = null) {
@@ -2297,11 +2151,9 @@
       const ma50 = Number(stock.ma50) || Math.round(safeClose * 0.95);
       const ma200 = Number(stock.ma200) || Math.round(safeClose * 0.90);
       
-      // 1. Sector header
       const sectorElem = document.getElementById('m-sector');
       if (sectorElem) sectorElem.textContent = stock.sector || getStockSector(stock.ticker);
 
-      // 2. Calculations for Support, Entry, TP, and SL:
       let support = (typeof stock.support === 'number' && stock.support > 0) ? stock.support : 0;
       if (!support || support <= 0 || isNaN(support)) {
         if (safeClose >= ma20) {
@@ -2327,46 +2179,27 @@
         ? chartData.rsi[chartData.rsi.length - 1] 
         : (typeof stock.rsi === 'number' ? stock.rsi : 50);
 
-      // ==========================================================
-      // MULTI-FACTOR QUANT CONFLUENCE SCORING (5 KRITERIA KHUSUS)
-      // ==========================================================
-      // FAKTOR 1: Trend & Struktur Moving Average (Max 25 Poin)
       let ptsTrend = 0;
       if (safeClose > ma20) ptsTrend += 10;
       else if (safeClose >= ma20 * 0.985) ptsTrend += 5;
-
       if (ma20 > ma50) ptsTrend += 8;
       else if (ma20 >= ma50 * 0.98) ptsTrend += 4;
-
       if (safeClose > ma200) ptsTrend += 7;
       else if (safeClose >= ma200 * 0.97) ptsTrend += 3;
 
-      // FAKTOR 2: Momentum Indikator RSI (14) & MACD Signal (Max 25 Poin)
       let ptsMomentum = 0;
-      if (curRsi >= 45 && curRsi <= 60) {
-        ptsMomentum += 18; // Akumulasi zona ideal
-      } else if (curRsi > 60 && curRsi <= 68) {
-        ptsMomentum += 15; // Bullish ekspansi
-      } else if (curRsi >= 32 && curRsi < 45) {
-        ptsMomentum += 13; // Rebound buy on weakness
-      } else if (curRsi > 68 && curRsi <= 76) {
-        ptsMomentum += 7; // Overbought rawan koreksi
-      } else if (curRsi > 76) {
-        ptsMomentum += 3; // Extreme overbought FOMO
-      } else {
-        ptsMomentum += 6; // Severe panic breakdown
-      }
+      if (curRsi >= 45 && curRsi <= 60) ptsMomentum += 18;
+      else if (curRsi > 60 && curRsi <= 68) ptsMomentum += 15;
+      else if (curRsi >= 32 && curRsi < 45) ptsMomentum += 13;
+      else if (curRsi > 68 && curRsi <= 76) ptsMomentum += 7;
+      else if (curRsi > 76) ptsMomentum += 3;
+      else ptsMomentum += 6;
 
       const macdSig = String(stock.macdSignal || '').toUpperCase();
-      if (macdSig.includes('BULLISH') || macdSig.includes('GOLDEN')) {
-        ptsMomentum += 7;
-      } else if (macdSig.includes('NEUTRAL') || macdSig.includes('CONSOLIDATION')) {
-        ptsMomentum += 4;
-      } else {
-        ptsMomentum += 1;
-      }
+      if (macdSig.includes('BULLISH') || macdSig.includes('GOLDEN')) ptsMomentum += 7;
+      else if (macdSig.includes('NEUTRAL') || macdSig.includes('CONSOLIDATION')) ptsMomentum += 4;
+      else ptsMomentum += 1;
 
-      // FAKTOR 3: Jarak Harga Saat Ini ke Zona Support / Entry Ideal (Max 25 Poin)
       let ptsSupport = 0;
       const distPct = ((safeClose - entryMin) / entryMin) * 100;
       const diffPoints = safeClose - entryMax;
@@ -2384,7 +2217,6 @@
       let scoreBadgeClass = "";
 
       if (distPct >= -1.0 && distPct <= 2.2) {
-        // Tepat di area Support Rebound / Ready to Buy
         ptsSupport = 25;
         statusBadgeText = "READY TO BUY";
         statusBadgeClass = "px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-950 border border-emerald-800 text-emerald-300";
@@ -2400,7 +2232,6 @@
         warningBoxClass = "rounded-xl bg-emerald-950/20 border border-emerald-900/50 p-3.5 flex items-start gap-3";
         warningIconClass = "mt-0.5 text-emerald-400 shrink-0";
       } else if (distPct > 2.2 && distPct <= 5.0) {
-        // Retracement / Tunggu Pullback
         ptsSupport = 17;
         statusBadgeText = "WAIT PULLBACK";
         statusBadgeClass = "px-2.5 py-1 rounded-lg text-xs font-extrabold bg-sky-950 border border-sky-800 text-sky-300";
@@ -2416,7 +2247,6 @@
         warningBoxClass = "rounded-xl bg-sky-950/20 border border-sky-900/50 p-3.5 flex items-start gap-3";
         warningIconClass = "mt-0.5 text-sky-400 shrink-0";
       } else if (distPct > 5.0) {
-        // Entry sudah lewat, resiko kejar harga
         ptsSupport = 6;
         statusBadgeText = "ENTRY SUDAH LEWAT";
         statusBadgeClass = "px-2.5 py-1 rounded-lg text-xs font-extrabold bg-amber-950 border border-amber-800 text-amber-300";
@@ -2432,7 +2262,6 @@
         warningBoxClass = "rounded-xl bg-amber-950/20 border border-amber-900/50 p-3.5 flex items-start gap-3";
         warningIconClass = "mt-0.5 text-amber-400 shrink-0";
       } else {
-        // Breakdown support
         ptsSupport = 2;
         statusBadgeText = "RISK TINGGI";
         statusBadgeClass = "px-2.5 py-1 rounded-lg text-xs font-extrabold bg-rose-950 border border-rose-800 text-rose-300";
@@ -2449,7 +2278,6 @@
         warningIconClass = "mt-0.5 text-rose-400 shrink-0";
       }
 
-      // FAKTOR 4: Likuiditas & Volume Turnover (Max 15 Poin)
       let ptsVolume = 0;
       const volNum = parseFloat(String(stock.volume || '0').replace(/[^0-9.]/g, '')) || 10;
       if (volNum >= 30) ptsVolume = 15;
@@ -2457,17 +2285,14 @@
       else if (volNum >= 5) ptsVolume = 9;
       else ptsVolume = 5;
 
-      // FAKTOR 5: Risk-to-Reward Ratio (Max 10 Poin)
       let ptsRR = 0;
       if (rr >= 2.5) ptsRR = 10;
       else if (rr >= 1.8) ptsRR = 8;
       else if (rr >= 1.3) ptsRR = 5;
       else ptsRR = 2;
 
-      // TOTAL SCORE AKHIR (0 - 100)
       const score = Math.max(14, Math.min(97, ptsTrend + ptsMomentum + ptsSupport + ptsVolume + ptsRR));
 
-      // Inject into DOM Tab 1 (Analisa)
       const scoreElem = document.getElementById('m-plan-score');
       if (scoreElem) {
         scoreElem.textContent = `${score}%`;
@@ -2481,7 +2306,6 @@
       const stratElem = document.getElementById('m-plan-strategy');
       if (stratElem) stratElem.textContent = strategyText;
 
-      // Update 5 Factor Matrix DOM
       const fTrend = document.getElementById('m-factor-trend');
       if (fTrend) fTrend.textContent = `${ptsTrend} / 25`;
       const fMom = document.getElementById('m-factor-momentum');
@@ -2510,7 +2334,6 @@
         biasElem.className = safeChg >= 0 ? 'text-emerald-400' : 'text-amber-400';
       }
 
-      // 4-Column Matrix:
       const entryElem = document.getElementById('m-plan-entry');
       if (entryElem) entryElem.textContent = `Rp ${entryMin.toLocaleString('id-ID')} - ${entryMax.toLocaleString('id-ID')}`;
       
@@ -2528,7 +2351,6 @@
       const slPctElem = document.getElementById('m-plan-sl-pct');
       if (slPctElem) slPctElem.textContent = `-${(((safeClose - sl)/safeClose)*100).toFixed(1)}%`;
 
-      // Risk to Reward Box:
       const rrElem = document.getElementById('m-plan-rr');
       if (rrElem) rrElem.textContent = `R/R = 1 : ${rr} (ke TP1) — level ikut mode Swing`;
       const riskValElem = document.getElementById('m-plan-risk-val');
@@ -2536,7 +2358,6 @@
       const rewardValElem = document.getElementById('m-plan-reward-val');
       if (rewardValElem) rewardValElem.textContent = `+Rp ${reward.toLocaleString('id-ID')}`;
 
-      // Visual Price Slider Position:
       const sliderMin = Math.min(sl, safeClose) * 0.98;
       const sliderMax = Math.max(tp2, safeClose) * 1.02;
       const sliderPct = Math.max(6, Math.min(94, ((safeClose - sliderMin) / (sliderMax - sliderMin)) * 100));
@@ -2569,7 +2390,6 @@
       const sTp2 = document.getElementById('m-slider-val-tp2');
       if (sTp2) sTp2.textContent = `Rp ${tp2.toLocaleString('id-ID')}`;
 
-      // Warning Box:
       const warnBox = document.getElementById('m-plan-warning-box');
       if (warnBox) warnBox.className = warningBoxClass;
       const warnTitle = document.getElementById('m-plan-warning-title');
@@ -2597,9 +2417,7 @@
         const saved = JSON.parse(localStorage.getItem('idx_stock_alerts') || '[]');
         saved.push(alertItem);
         localStorage.setItem('idx_stock_alerts', JSON.stringify(saved));
-      } catch (e) {
-        console.warn('LocalStorage error:', e);
-      }
+      } catch (e) {}
 
       showToast(`Alert aktif untuk ${selectedStock.ticker}: Pantau Entry di Rp ${support.toLocaleString('id-ID')} & TP1 di Rp ${tp1.toLocaleString('id-ID')}`, 'success');
     }
@@ -2745,15 +2563,9 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
 
       if (realTimeQuotesCache[stock.ticker]) {
         const live = realTimeQuotesCache[stock.ticker];
-        if (typeof live.price === 'number' && live.price > 0) {
-          stock.close = live.price;
-        }
-        if (typeof live.changePct === 'number') {
-          stock.change = live.changePct;
-        }
-        if (live.volume) {
-          stock.volume = formatVolumeNumber(live.volume);
-        }
+        if (typeof live.price === 'number' && live.price > 0) stock.close = live.price;
+        if (typeof live.changePct === 'number') stock.change = live.changePct;
+        if (live.volume) stock.volume = formatVolumeNumber(live.volume);
       }
       selectedStock = stock;
       document.getElementById('m-ticker').textContent = stock.ticker;
@@ -2770,21 +2582,18 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       chgElem.className = isPos ? 'font-bold text-emerald-400 font-mono text-sm' : 'font-bold text-rose-400 font-mono text-sm';
       document.getElementById('m-vol').textContent = stock.volume || '25.4M';
 
-      // Pivots
       document.getElementById('m-r2').textContent = `Rp ${Math.round(safeClose * 1.05).toLocaleString('id-ID')}`;
       document.getElementById('m-r1').textContent = `Rp ${Math.round(safeClose * 1.025).toLocaleString('id-ID')}`;
       document.getElementById('m-pp').textContent = `Rp ${Math.round(safeClose * 1.00).toLocaleString('id-ID')}`;
       document.getElementById('m-s1').textContent = `Rp ${Math.round(safeClose * 0.975).toLocaleString('id-ID')}`;
       document.getElementById('m-s2').textContent = `Rp ${Math.round(safeClose * 0.95).toLocaleString('id-ID')}`;
 
-      // Default to Analisa tab
       switchModalTab('analisa');
       updateTradingPlanAndTabsUI(stock);
 
       document.getElementById('modal-stock').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
 
-      // Render chart for selected timeframe
       renderModalCharts(stock, selectedTimeframe);
     }
 
@@ -2831,11 +2640,8 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
             }
           }
         }
-      } catch (e) {
-        console.warn('Gagal ambil live chart dari backend, menggunakan generator deterministik unik emiten:', e);
-      }
+      } catch (e) {}
 
-      // If remote chart wasn't available, generate deterministic chart unique to this ticker
       if (!chartData) {
         chartData = generateDistinctStockChart(stock, timeframe);
         if (sourceBadge) {
@@ -2844,12 +2650,10 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
         }
       }
 
-      // Complete Two-Way Synchronization: Update Modal, Objek Stock, Pivot Points, Cache, and Screener Table
       if (chartData.currentPrice) {
         const liveClose = chartData.currentPrice;
         const liveChg = typeof chartData.changePct === 'number' ? chartData.changePct : 0;
         
-        // Update stock in-memory reference
         stock.close = liveClose;
         stock.change = liveChg;
         if (chartData.volume) {
@@ -2859,25 +2663,20 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
         stock.support = Math.round(liveClose * 0.96);
         selectedStock = stock;
 
-        // 1. Update modal close price and change badges
         document.getElementById('m-close').textContent = `Rp ${liveClose.toLocaleString('id-ID')}`;
         const isPos = liveChg >= 0;
         const chgElem = document.getElementById('m-change');
         chgElem.textContent = `${isPos ? '+' : ''}${liveChg.toFixed(2)}%`;
         chgElem.className = isPos ? 'font-bold text-emerald-400 font-mono' : 'font-bold text-rose-400 font-mono';
 
-        if (chartData.volume) {
-          document.getElementById('m-vol').textContent = stock.volume;
-        }
+        if (chartData.volume) document.getElementById('m-vol').textContent = stock.volume;
 
-        // 2. Re-calculate Pivots with exact live close
         document.getElementById('m-r2').textContent = `Rp ${Math.round(liveClose * 1.05).toLocaleString('id-ID')}`;
         document.getElementById('m-r1').textContent = `Rp ${Math.round(liveClose * 1.025).toLocaleString('id-ID')}`;
         document.getElementById('m-pp').textContent = `Rp ${Math.round(liveClose * 1.00).toLocaleString('id-ID')}`;
         document.getElementById('m-s1').textContent = `Rp ${Math.round(liveClose * 0.975).toLocaleString('id-ID')}`;
         document.getElementById('m-s2').textContent = `Rp ${Math.round(liveClose * 0.95).toLocaleString('id-ID')}`;
 
-        // 3. Save into client-side realTimeQuotesCache
         realTimeQuotesCache[stock.ticker] = {
           ticker: stock.ticker,
           price: liveClose,
@@ -2885,7 +2684,6 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
           volume: chartData.volume
         };
 
-        // 4. Update the stock in allStocks list and refresh screener table row
         const stockIdx = allStocks.findIndex(s => s.ticker === stock.ticker);
         if (stockIdx !== -1) {
           allStocks[stockIdx].close = liveClose;
@@ -2896,10 +2694,8 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
         renderScreenerTable();
       }
 
-      // Synchronize Smart Trading Plan & Tabs with fresh chart data
       updateTradingPlanAndTabsUI(stock, chartData);
 
-      // Update RSI & MACD descriptions
       const lastRsi = chartData.rsi[chartData.rsi.length - 1] || stock.rsi || 50;
       const rsiDescElem = document.getElementById('m-rsi-desc');
       if (rsiDescElem) {
@@ -3053,20 +2849,15 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       if (overlay) overlay.classList.add('hidden');
     }
 
-    /**
-     * Deterministic Generator: Each stock ticker produces a 100% DISTINCT price chart
-     */
     function generateDistinctStockChart(stock, timeframe) {
       const close = stock.close || 5000;
       const daysCount = timeframe === '1M' ? 22 : timeframe === '6M' ? 125 : timeframe === '1Y' ? 245 : 65;
       
-      // Calculate seed from ticker characters
       let seed = 0;
       for (let i = 0; i < stock.ticker.length; i++) {
         seed = (seed * 31 + stock.ticker.charCodeAt(i)) % 100000;
       }
 
-      // Deterministic PRNG
       function pseudoRandom() {
         seed = (seed * 9301 + 49297) % 233280;
         return seed / 233280;
@@ -3076,9 +2867,7 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       const prices = [];
       const now = new Date();
       
-      // Select archetype based on ticker
-      const archetype = stock.ticker.charCodeAt(0) % 4; // 0: strong uptrend, 1: pullback dip, 2: breakout spike, 3: cyclic swing
-      
+      const archetype = stock.ticker.charCodeAt(0) % 4;
       let basePrice = close * (archetype === 0 ? 0.82 : archetype === 1 ? 1.08 : archetype === 2 ? 0.78 : 0.94);
       let current = basePrice;
 
@@ -3096,7 +2885,6 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
         prices.push(Math.round(current));
       }
 
-      // Compute Moving Averages
       function calcSMA(arr, period) {
         return arr.map((val, idx) => {
           if (idx < period - 1) {
@@ -3182,16 +2970,13 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
           const canvas = document.getElementById('canvas-watermark');
           const ctx = canvas.getContext('2d');
 
-          // Target scale
           const maxW = 900;
           const scale = Math.min(1, maxW / img.width);
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
 
-          // Draw base image
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          // Diagonal repetitive watermark text: "SAHAM CORE"
           ctx.save();
           ctx.font = `bold ${Math.round(canvas.width / 16)}px "JetBrains Mono", sans-serif`;
           ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
@@ -3206,7 +2991,6 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
           }
           ctx.restore();
 
-          // Official verification stamp on bottom right
           ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
           ctx.fillRect(canvas.width - 240, canvas.height - 35, 230, 26);
           ctx.font = 'bold 10px "JetBrains Mono"';
@@ -3240,7 +3024,6 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
           generateSeedStockpicks();
         }
       } catch (e) {
-        console.warn('Fallback stockpicks feed:', e);
         generateSeedStockpicks();
       }
       renderStockpicksGrid();
@@ -3388,7 +3171,6 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       } catch (err) {
         showToast(`Stockpick ${ticker} dipublikasikan (Mode Offline Feed)!`);
       } finally {
-        // Prepend locally so members see it instantly
         stockpicks.unshift({
           ...payload,
           date: "Baru Saja"
