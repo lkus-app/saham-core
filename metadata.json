@@ -1,5 +1,5 @@
 {
-  "name": "IDX Quant Analyst - Saham Core",
+  "name": "Lapin IDX",
   "description": "Terminal analisis kuantitatif saham IDX dengan screener 220+ emiten terintegrasi database, 5-factor confluence scoring, dan Role-Based Access Control (RBAC).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
