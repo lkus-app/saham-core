@@ -661,9 +661,21 @@
                 <p class="text-[11px] text-slate-400">Riset kuantitatif, analisis teknikal, dan bandarmologi resmi dari Tim Lapin IDX.</p>
               </div>
             </div>
-            <span class="px-2.5 py-1 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 text-[11px] font-bold">
-              AKSES VIP AKTIF
-            </span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button
+                id="btn-toggle-admin-mode"
+                type="button"
+                onclick="toggleAdminMode()"
+                title="Klik untuk beralih antara Mode Admin dan Member"
+                class="px-2.5 py-1 rounded border text-[11px] font-bold font-mono transition flex items-center gap-1.5 bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/60"
+              >
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span id="admin-mode-text">MODE ADMIN: AKTIF</span>
+              </button>
+              <span class="px-2.5 py-1 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 text-[11px] font-bold">
+                AKSES VIP AKTIF
+              </span>
+            </div>
           </div>
 
           <!-- FEED LISTING -->
@@ -1173,6 +1185,281 @@
         >
           SELESAI &amp; TERAPKAN
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 5. MODAL: EDIT STOCKPICK & GANTI FOTO (ADMIN ONLY)                -->
+  <!-- ================================================================= -->
+  <div id="modal-edit-stockpick" class="hidden fixed inset-0 z-[65] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+    <div class="max-w-2xl w-full my-auto rounded-xl border border-amber-500/30 bg-[#1a1d26] shadow-2xl overflow-hidden font-mono text-xs">
+      <div class="px-4 py-3 border-b border-[#2a2e3d] bg-[#12151c] flex items-center justify-between">
+        <div class="flex items-center gap-2 text-amber-400 font-bold">
+          <i data-lucide="edit-3" class="w-4 h-4"></i>
+          <span>EDIT IDE STOCKPICK &amp; ANALISIS (ADMIN)</span>
+        </div>
+        <button onclick="closeEditStockpickModal()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a1d26] transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveEditStockpick(event)" class="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+        <input type="hidden" id="edit-sp-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="space-y-1">
+            <label class="text-[11px] text-slate-300 font-bold">EMITEN (TICKER):</label>
+            <input
+              type="text"
+              id="edit-sp-ticker"
+              required
+              class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-white uppercase font-bold focus:border-cyan-400 focus:outline-none"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-slate-300 font-bold">LEVEL ENTRY (RP):</label>
+            <input
+              type="number"
+              id="edit-sp-entry"
+              required
+              class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-white focus:border-cyan-400 focus:outline-none"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-emerald-400 font-bold">TARGET (TP):</label>
+            <input
+              type="number"
+              id="edit-sp-tp"
+              required
+              class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-emerald-300 focus:border-emerald-400 focus:outline-none"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-rose-400 font-bold">STOP LOSS (SL):</label>
+            <input
+              type="number"
+              id="edit-sp-sl"
+              required
+              class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-rose-300 focus:border-rose-400 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-[11px] text-slate-300 font-bold">JUDUL IDE SETUP:</label>
+            <input
+              type="text"
+              id="edit-sp-title"
+              required
+              class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-white font-sans text-xs focus:border-cyan-400 focus:outline-none"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-cyan-400 font-bold">STATUS STOCKPICK:</label>
+            <select
+              id="edit-sp-status"
+              class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-cyan-300 font-bold focus:border-cyan-400 focus:outline-none"
+            >
+              <option value="ACTIVE">AKTIF (IN PROGRESS)</option>
+              <option value="HIT_TP">🎯 HIT TP (TARGET TERCAPAI)</option>
+              <option value="HIT_SL">⚠️ HIT SL (STOP LOSS TERSENTUH)</option>
+              <option value="CLOSED">✅ CLOSED (MANUAL EXIT / SELESAI)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] text-cyan-400 font-bold">ANALISIS TEKNIKAL (TA):</label>
+          <textarea
+            id="edit-sp-ta"
+            rows="2"
+            class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-white font-sans text-xs focus:border-cyan-400 focus:outline-none"
+          ></textarea>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] text-amber-400 font-bold">ANALISIS BANDARMOLOGI &amp; FLOW:</label>
+          <textarea
+            id="edit-sp-bandar"
+            rows="2"
+            class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-white font-sans text-xs focus:border-amber-400 focus:outline-none"
+          ></textarea>
+        </div>
+
+        <!-- Bagian Foto & Upload Ulang / Ganti Foto -->
+        <div class="p-3.5 rounded-xl bg-[#12151c] border border-[#2a2e3d] space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5">
+              <i data-lucide="image" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>FOTO LAMPIRAN CHART (1 WATERMARK TENGAH):</span>
+            </label>
+            <span class="text-[10px] text-slate-500">Center Watermark</span>
+          </div>
+
+          <!-- Pratinjau Foto Saat Ini -->
+          <div id="edit-current-image-box" class="hidden space-y-2">
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>Foto Saat Ini Terpasang:</span>
+              <button
+                type="button"
+                onclick="removeEditImage()"
+                class="text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1"
+              >
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                <span>Hapus Foto Ini</span>
+              </button>
+            </div>
+            <div class="rounded-lg overflow-hidden border border-[#2a2e3d] max-h-48 flex items-center justify-center bg-[#0d1017]">
+              <img id="edit-current-img-preview" src="" alt="Chart Preview" class="max-h-48 w-auto object-contain" />
+            </div>
+          </div>
+
+          <!-- Upload Foto Baru -->
+          <div class="space-y-2">
+            <span class="text-[11px] text-cyan-400 block font-bold">Ganti atau Upload Foto Baru:</span>
+            <input
+              type="file"
+              id="edit-sp-file"
+              accept="image/*"
+              onchange="renderEditWatermarkedImage(event)"
+              class="text-xs text-slate-400 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-mono file:bg-cyan-600 file:text-slate-950 hover:file:bg-cyan-500"
+            />
+            <div id="edit-preview-canvas-wrapper" class="hidden pt-2 space-y-2">
+              <div class="flex items-center justify-between text-[11px] text-emerald-400">
+                <span>Hasil Watermark Tengah Baru:</span>
+                <button type="button" onclick="clearEditWatermark()" class="text-rose-400 hover:underline">Batal Pakai Foto Baru</button>
+              </div>
+              <canvas id="edit-canvas-watermark" class="max-h-48 w-auto rounded border border-[#2a2e3d]"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#2a2e3d]">
+          <button
+            type="button"
+            onclick="closeEditStockpickModal()"
+            class="px-4 py-2 rounded-lg bg-[#161920] hover:bg-[#232836] border border-[#2a2e3d] text-slate-300 transition"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            id="btn-save-edit-sp"
+            class="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-lg"
+          >
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Simpan Perubahan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 6. MODAL: CLOSE / HIT STOCKPICK (ADMIN ONLY)                      -->
+  <!-- ================================================================= -->
+  <div id="modal-close-stockpick" class="hidden fixed inset-0 z-[66] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+    <div class="max-w-md w-full my-auto rounded-xl border border-cyan-500/30 bg-[#1a1d26] shadow-2xl overflow-hidden font-mono text-xs">
+      <div class="px-4 py-3 border-b border-[#2a2e3d] bg-[#12151c] flex items-center justify-between">
+        <div class="flex items-center gap-2 text-cyan-400 font-bold">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>CLOSE / SELESAIKAN STOCKPICK</span>
+        </div>
+        <button onclick="closeCloseStockpickModal()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a1d26] transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleConfirmCloseStockpick(event)" class="p-5 space-y-4">
+        <input type="hidden" id="close-sp-id" />
+
+        <div class="p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d] space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Kode Emiten:</span>
+            <span id="close-sp-ticker" class="text-cyan-400 font-bold text-sm">BBCA</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Level Entry:</span>
+            <span id="close-sp-entry" class="text-white font-bold">Rp 10.250</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Target (TP) / SL:</span>
+            <span id="close-sp-target" class="text-slate-300 font-bold">Rp 10.950 / Rp 9.900</span>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] text-slate-300 font-bold">STATUS PENYELESAIAN:</label>
+          <select
+            id="close-sp-status"
+            onchange="updateCloseModalPresets()"
+            class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-white font-bold focus:border-cyan-400 focus:outline-none"
+          >
+            <option value="HIT_TP">🎯 HIT TP (TARGET PROFIT TERCAPAI)</option>
+            <option value="HIT_SL">⚠️ HIT SL (BATAS RESIKO TERSENTUH)</option>
+            <option value="CLOSED">✅ CLOSED (PROFIT SECURED / EXIT MANUAL)</option>
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] text-slate-300 font-bold">HARGA EXIT REALISASI (RP):</label>
+          <input
+            type="number"
+            id="close-sp-exit-price"
+            required
+            placeholder="Rp Exit"
+            class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-emerald-300 font-bold focus:border-cyan-400 focus:outline-none"
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] text-slate-300 font-bold">CATATAN EVALUASI / REALISASI:</label>
+          <input
+            type="text"
+            id="close-sp-note"
+            placeholder="Contoh: Target profit tercapai di resistance Rp 10.950 (+6.8%)"
+            class="w-full px-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] text-white font-sans text-xs focus:border-cyan-400 focus:outline-none"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#2a2e3d]">
+          <button
+            type="button"
+            onclick="closeCloseStockpickModal()"
+            class="px-4 py-2 rounded-lg bg-[#161920] hover:bg-[#232836] border border-[#2a2e3d] text-slate-300 transition"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-lg"
+          >
+            <i data-lucide="check-check" class="w-4 h-4"></i>
+            <span>Simpan &amp; Selesaikan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 7. MODAL: FULL RESOLUTION IMAGE PREVIEW (ZOOM)                    -->
+  <!-- ================================================================= -->
+  <div id="modal-image-preview" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-2 sm:p-6 overflow-auto" onclick="closeImageModal()">
+    <div class="relative max-w-5xl w-full my-auto rounded-xl overflow-hidden border border-[#2a2e3d] bg-[#12151c] shadow-2xl" onclick="event.stopPropagation()">
+      <div class="px-4 py-2.5 bg-[#161920] border-b border-[#2a2e3d] flex items-center justify-between text-xs font-mono text-slate-300">
+        <span class="flex items-center gap-2">
+          <i data-lucide="image" class="w-4 h-4 text-cyan-400"></i>
+          <span id="image-modal-title">LAMPIRAN CHART TERVERIFIKASI LAPIN IDX</span>
+        </span>
+        <button onclick="closeImageModal()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a1d26] transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-2 sm:p-4 flex items-center justify-center bg-slate-950">
+        <img id="image-modal-src" src="" alt="Full Chart" class="max-h-[80vh] w-auto object-contain rounded" />
       </div>
     </div>
   </div>

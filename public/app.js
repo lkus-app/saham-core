@@ -13,7 +13,9 @@ let currentChartTf = '3M';
 let currentChartMode = 'candlestick'; // 'candlestick' or 'line'
 let currentOscMode = 'MACD';          // 'MACD', 'RSI', 'VOL', 'AD'
 let watermarkedImageData = "";
+let editWatermarkedImageData = "";
 let stockpicks = [];
+let adminModeActive = true; // Admin capability active by default for lkusdewanto@gmail.com
 
 // Chart Instances
 let chartPriceInstance = null;
@@ -105,6 +107,9 @@ function checkSavedSession() {
   if (saved) {
     try {
       currentUser = JSON.parse(saved);
+      if (currentUser && (currentUser.email === 'lkusdewanto@gmail.com' || currentUser.email?.toLowerCase().includes('admin'))) {
+        currentUser.role = 'admin';
+      }
       enterDashboard();
     } catch (e) {
       handleLogout();
@@ -241,16 +246,8 @@ function enterDashboard() {
   const expInfo = document.getElementById('exp-info');
   if (expInfo && currentUser) expInfo.textContent = `EXP: ${currentUser.expired_at || 'UNLIMITED'}`;
   
-  const roleBadge = document.getElementById('role-badge');
-  if (roleBadge && currentUser) {
-    if (currentUser.role === 'admin') {
-      roleBadge.textContent = 'ADMIN CORE';
-      roleBadge.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-extrabold uppercase border bg-amber-500/10 border-amber-500/40 text-amber-400';
-      document.getElementById('admin-stockpick-form-box')?.classList.remove('hidden');
-    } else {
-      roleBadge.textContent = 'PRO MEMBER';
-      roleBadge.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-extrabold uppercase border bg-cyan-500/10 border-cyan-500/40 text-cyan-400';
-    }
+  if (typeof updateAdminUI === 'function') {
+    updateAdminUI();
   }
 
   fetchScreener(currentFilter || 'ALL');
@@ -1533,8 +1530,128 @@ function switchSection(sec) {
 window.switchSection = switchSection;
 
 // ============================================================================
-// 7. WATERMARK & STOCKPICK SYSTEM
+// 7. WATERMARK & STOCKPICK SYSTEM (ADMIN MANAGEMENT & VIP RESEARCH)
 // ============================================================================
+
+// Admin Detection & Mode Switcher
+function isUserAdmin() {
+  if (adminModeActive) return true;
+  if (currentUser && (currentUser.role === 'admin' || currentUser.email === 'lkusdewanto@gmail.com' || currentUser.email?.toLowerCase().includes('admin'))) {
+    return true;
+  }
+  return false;
+}
+window.isUserAdmin = isUserAdmin;
+
+function toggleAdminMode() {
+  adminModeActive = !adminModeActive;
+  updateAdminUI();
+  renderStockpicksGrid();
+  if (window.showToast) {
+    showToast(adminModeActive ? "Mode Admin Aktif: Kontrol Edit, Delete, Close & Form Publikasi tersedia" : "Mode Member Aktif: Pratinjau tampilan publik member", "info");
+  }
+}
+window.toggleAdminMode = toggleAdminMode;
+
+function updateAdminUI() {
+  const isAdmin = isUserAdmin();
+  const formBox = document.getElementById('admin-stockpick-form-box');
+  const btnToggle = document.getElementById('btn-toggle-admin-mode');
+  const txtMode = document.getElementById('admin-mode-text');
+  const roleBadge = document.getElementById('role-badge');
+
+  if (formBox) {
+    if (isAdmin) {
+      formBox.classList.remove('hidden');
+    } else {
+      formBox.classList.add('hidden');
+    }
+  }
+
+  if (txtMode) {
+    txtMode.textContent = isAdmin ? 'MODE ADMIN: AKTIF' : 'MODE MEMBER: AKTIF';
+  }
+  if (btnToggle) {
+    if (isAdmin) {
+      btnToggle.className = "px-2.5 py-1 rounded border text-[11px] font-bold font-mono transition flex items-center gap-1.5 bg-amber-950/50 border-amber-500/60 text-amber-300 hover:bg-amber-900/60";
+    } else {
+      btnToggle.className = "px-2.5 py-1 rounded border text-[11px] font-bold font-mono transition flex items-center gap-1.5 bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-700";
+    }
+  }
+
+  if (roleBadge && currentUser) {
+    if (isAdmin) {
+      roleBadge.textContent = 'ADMIN CORE';
+      roleBadge.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-extrabold uppercase border bg-amber-500/10 border-amber-500/40 text-amber-400';
+    } else {
+      roleBadge.textContent = 'PRO MEMBER';
+      roleBadge.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-extrabold uppercase border bg-cyan-500/10 border-cyan-500/40 text-cyan-400';
+    }
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+window.updateAdminUI = updateAdminUI;
+
+// Single Center Watermark Engine
+function applyCenterWatermark(canvas, ctx) {
+  ctx.save();
+  // 1 single prominent watermark centered on canvas
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  ctx.translate(centerX, centerY);
+  ctx.rotate(-15 * Math.PI / 180);
+
+  // Large font proportional to image width
+  const fontSize = Math.max(36, Math.round(canvas.width / 11));
+  ctx.font = `900 ${fontSize}px "JetBrains Mono", system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // Outline shadow for clarity against bright and dark charts
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+  ctx.lineWidth = Math.max(3, Math.round(fontSize / 12));
+  ctx.strokeText("LAPIN IDX VIP", 0, -fontSize * 0.18);
+
+  // Main semi-transparent white text
+  ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
+  ctx.fillText("LAPIN IDX VIP", 0, -fontSize * 0.18);
+
+  // Subtitle badge
+  const subSize = Math.max(13, Math.round(fontSize * 0.28));
+  ctx.font = `bold ${subSize}px "JetBrains Mono", system-ui, sans-serif`;
+  ctx.fillStyle = "rgba(56, 189, 248, 0.45)";
+  ctx.fillText("OFFICIAL RESEARCH & TRADING JOURNAL", 0, fontSize * 0.42);
+
+  ctx.restore();
+
+  // Official Corner Stamp (bottom right)
+  const stampW = Math.min(260, canvas.width * 0.45);
+  const stampH = 30;
+  const stampX = canvas.width - stampW - 12;
+  const stampY = canvas.height - stampH - 12;
+
+  ctx.fillStyle = "rgba(10, 15, 26, 0.88)";
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(stampX, stampY, stampW, stampH, 6);
+  } else {
+    ctx.rect(stampX, stampY, stampW, stampH);
+  }
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.font = 'bold 10px "JetBrains Mono", sans-serif';
+  ctx.fillStyle = "#38bdf8";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("VERIFIED • LAPIN IDX CORE", stampX + stampW / 2, stampY + stampH / 2);
+}
+
+// 1. Upload Handler for Publish Form
 function renderWatermarkedImage(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -1547,36 +1664,20 @@ function renderWatermarkedImage(event) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
-      const maxW = 900;
+      // Constrain dimensions to ~1100px max width to preserve sharpness without bloating localStorage
+      const maxW = 1100;
       const scale = Math.min(1, maxW / img.width);
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
 
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // Watermark text
-      ctx.save();
-      ctx.font = `bold ${Math.round(canvas.width / 16)}px "JetBrains Mono", sans-serif`;
-      ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
-      ctx.textAlign = "center";
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(-28 * Math.PI / 180);
+      // Apply single center watermark
+      applyCenterWatermark(canvas, ctx);
 
-      for (let y = -canvas.height; y <= canvas.height; y += 140) {
-        for (let x = -canvas.width; x <= canvas.width; x += 280) {
-          ctx.fillText("LAPIN IDX VIP", x, y);
-        }
-      }
-      ctx.restore();
+      // Store in global state
+      watermarkedImageData = canvas.toDataURL("image/jpeg", 0.82);
 
-      // Official Stamp
-      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
-      ctx.fillRect(canvas.width - 240, canvas.height - 36, 230, 28);
-      ctx.font = 'bold 10px "JetBrains Mono"';
-      ctx.fillStyle = "#38bdf8";
-      ctx.fillText("VERIFIED • LAPIN IDX CORE", canvas.width - 225, canvas.height - 18);
-
-      watermarkedImageData = canvas.toDataURL("image/jpeg", 0.85);
       const wrapper = document.getElementById('preview-canvas-wrapper');
       if (wrapper) wrapper.classList.remove('hidden');
     };
@@ -1595,18 +1696,140 @@ function clearWatermark() {
 }
 window.clearWatermark = clearWatermark;
 
-async function fetchStockpicks() {
-  try {
-    const res = await fetch(`${API_URL}?action=stockpicks`, { signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-    if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-      stockpicks = data.data;
+// 2. Upload Handler for Edit Modal
+function renderEditWatermarkedImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.getElementById('edit-canvas-watermark');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const maxW = 1100;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Apply single center watermark
+      applyCenterWatermark(canvas, ctx);
+
+      editWatermarkedImageData = canvas.toDataURL("image/jpeg", 0.82);
+
+      const wrapper = document.getElementById('edit-preview-canvas-wrapper');
+      if (wrapper) wrapper.classList.remove('hidden');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+window.renderEditWatermarkedImage = renderEditWatermarkedImage;
+
+function clearEditWatermark() {
+  editWatermarkedImageData = "";
+  const fileInput = document.getElementById('edit-sp-file');
+  const wrapper = document.getElementById('edit-preview-canvas-wrapper');
+  if (fileInput) fileInput.value = "";
+  if (wrapper) wrapper.classList.add('hidden');
+}
+window.clearEditWatermark = clearEditWatermark;
+
+function removeEditImage() {
+  editWatermarkedImageData = "REMOVED";
+  const curBox = document.getElementById('edit-current-image-box');
+  if (curBox) curBox.classList.add('hidden');
+  clearEditWatermark();
+}
+window.removeEditImage = removeEditImage;
+
+// Daily Price Tracking Generator
+function generateDailyTracking(ticker, entryPrice, currentPriceInput) {
+  const entry = Number(entryPrice) || 1000;
+  const stock = Array.isArray(allStocks) ? allStocks.find(s => s.ticker === ticker) : null;
+  const livePrice = currentPriceInput ? Number(currentPriceInput) : (stock?.price ? Number(stock.price) : Math.round(entry * 1.025));
+
+  const now = new Date();
+  const offsets = [
+    { daysAgo: 3, label: '3 Hari Lalu' },
+    { daysAgo: 2, label: '2 Hari Lalu' },
+    { daysAgo: 1, label: 'Kemarin' },
+    { daysAgo: 0, label: 'Hari Ini' }
+  ];
+
+  let prevPrice = entry;
+  const days = [];
+
+  offsets.forEach((item, idx) => {
+    const d = new Date(now.getTime() - item.daysAgo * 24 * 60 * 60 * 1000);
+    const dateFormatted = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    let closePrice;
+    if (idx === 0) {
+      closePrice = entry;
+    } else if (idx === offsets.length - 1) {
+      closePrice = livePrice;
     } else {
-      stockpicks = getSeedStockpicks();
+      const factor = idx / (offsets.length - 1);
+      const randomJitter = (Math.sin(idx * 3 + entry) * 0.006);
+      closePrice = Math.round((entry + (livePrice - entry) * factor) * (1 + randomJitter) / 25) * 25;
     }
-  } catch (e) {
-    stockpicks = getSeedStockpicks();
+
+    const dailyChg = closePrice - prevPrice;
+    const dailyChgPct = prevPrice > 0 ? ((dailyChg / prevPrice) * 100) : 0;
+    const vsEntryChg = closePrice - entry;
+    const vsEntryPct = entry > 0 ? ((vsEntryChg / entry) * 100) : 0;
+
+    let statusLabel = "In Range";
+    if (vsEntryPct >= 5) statusLabel = "Target Dekat";
+    else if (vsEntryPct > 0) statusLabel = "Floating Profit";
+    else if (vsEntryPct < -3) statusLabel = "Dekat SL";
+    else if (vsEntryPct < 0) statusLabel = "Floating Minus";
+
+    days.push({
+      date: `${dateFormatted} (${item.label})`,
+      close: closePrice,
+      change: dailyChg,
+      changePct: Number(dailyChgPct.toFixed(2)),
+      vsEntryPct: Number(vsEntryPct.toFixed(2)),
+      status: statusLabel
+    });
+
+    prevPrice = closePrice;
+  });
+
+  return days;
+}
+
+// Local Storage Persistence
+function saveStockpicksLocally() {
+  try {
+    localStorage.setItem('lapin_stockpicks_data', JSON.stringify(stockpicks));
+  } catch (err) {
+    console.warn('Gagal menyimpan stockpicks ke localStorage (quota exceeded or private browsing):', err);
   }
+}
+
+async function fetchStockpicks() {
+  const localSaved = localStorage.getItem('lapin_stockpicks_data');
+  if (localSaved) {
+    try {
+      const parsed = JSON.parse(localSaved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        stockpicks = parsed;
+        renderStockpicksGrid();
+        return;
+      }
+    } catch (e) {}
+  }
+
+  // Fallback to initial seeds
+  stockpicks = getSeedStockpicks();
+  saveStockpicksLocally();
   renderStockpicksGrid();
 }
 window.fetchStockpicks = fetchStockpicks;
@@ -1614,103 +1837,305 @@ window.fetchStockpicks = fetchStockpicks;
 function getSeedStockpicks() {
   return [
     {
+      id: "sp_bbca_seed_1",
       ticker: "BBCA",
       title: "Breakout Resistance All-Time High",
       entry: "10250",
       tp: "10950",
       sl: "9900",
+      status: "ACTIVE",
       ta_rationale: "Memantul kuat dari MA20 harian dengan konfirmasi Golden Cross pada MACD Histogram dan volume beli institusi.",
       bandar_rationale: "Inflow dana institusi asing tercatat konsisten net buy selama 3 hari berturut-turut.",
       author: "Admin Lapin IDX",
-      date: "Hari Ini, 09:15 WIB"
+      date: "09 Sep 2026, 09:15 WIB",
+      image: "",
+      daily_tracking: [
+        { date: "06 Sep 2026 (Entry)", close: 10250, change: 0, changePct: 0.00, vsEntryPct: 0.00, status: "Entry Setup" },
+        { date: "07 Sep 2026 (Hari 2)", close: 10325, change: 75, changePct: 0.73, vsEntryPct: 0.73, status: "Floating Profit" },
+        { date: "08 Sep 2026 (Kemarin)", close: 10400, change: 75, changePct: 0.73, vsEntryPct: 1.46, status: "Floating Profit" },
+        { date: "09 Sep 2026 (Hari Ini)", close: 10475, change: 75, changePct: 0.72, vsEntryPct: 2.20, status: "Target Dekat" }
+      ]
     },
     {
+      id: "sp_adro_seed_2",
       ticker: "ADRO",
       title: "Swing Trade Momentum Energi & Dividen",
       entry: "3700",
       tp: "4050",
       sl: "3550",
+      status: "ACTIVE",
       ta_rationale: "Ascending triangle breakout dengan konfirmasi volume 1.5x rata-rata 20 hari. RSI 62 bullish momentum.",
       bandar_rationale: "Akumulasi teratur tanpa tanda-tanda distribusi masif.",
       author: "Tim Riset Kuantitatif",
-      date: "Kemarin, 14:30 WIB"
+      date: "08 Sep 2026, 14:30 WIB",
+      image: "",
+      daily_tracking: [
+        { date: "06 Sep 2026 (Entry)", close: 3700, change: 0, changePct: 0.00, vsEntryPct: 0.00, status: "Entry Setup" },
+        { date: "07 Sep 2026 (Hari 2)", close: 3740, change: 40, changePct: 1.08, vsEntryPct: 1.08, status: "Floating Profit" },
+        { date: "08 Sep 2026 (Kemarin)", close: 3820, change: 80, changePct: 2.14, vsEntryPct: 3.24, status: "Floating Profit" },
+        { date: "09 Sep 2026 (Hari Ini)", close: 3890, change: 70, changePct: 1.83, vsEntryPct: 5.14, status: "Target Dekat" }
+      ]
     }
   ];
 }
 
+// 3. Render Stockpicks Grid & Cards
 function renderStockpicksGrid() {
   const grid = document.getElementById('stockpicks-grid');
   const countLabel = document.getElementById('sp-count-text');
   if (!grid) return;
   grid.innerHTML = '';
-  if (countLabel) countLabel.textContent = `${stockpicks.length} Ide Aktif`;
+  
+  if (countLabel) countLabel.textContent = `${stockpicks.length} Ide Riset`;
 
   if (stockpicks.length === 0) {
-    grid.innerHTML = `<div class="col-span-2 text-center py-10 text-slate-500 font-mono">Belum ada ide stockpick aktif.</div>`;
+    grid.innerHTML = `
+      <div class="col-span-1 md:col-span-2 text-center py-12 px-4 rounded-xl border border-dashed border-[#2a2e3d] bg-[#12151c]/50 text-slate-400 font-mono">
+        <i data-lucide="inbox" class="w-8 h-8 text-slate-500 mx-auto mb-2"></i>
+        <p class="font-bold text-white">Belum ada ide stockpick aktif.</p>
+        <p class="text-xs text-slate-500 mt-1">Admin dapat menggunakan form di atas untuk mempublikasikan stockpick baru beserta lampiran chart.</p>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
     return;
   }
 
-  stockpicks.forEach(sp => {
+  const isAdmin = isUserAdmin();
+
+  stockpicks.forEach((sp, index) => {
+    if (!sp.id) sp.id = `sp_${Date.now()}_${index}`;
+
     const card = document.createElement('div');
-    card.className = "rounded-2xl border border-[#2a2e3d] bg-[#12151c] p-5 shadow-xl space-y-3 relative overflow-hidden";
-    
+    card.id = `card-sp-${sp.id}`;
+    card.className = "rounded-2xl border border-[#2a2e3d] bg-[#12151c] p-5 shadow-2xl space-y-3.5 relative overflow-hidden flex flex-col justify-between";
+
     const entryNum = Number(sp.entry) || 1000;
     const tpNum = Number(sp.tp) || 1100;
     const slNum = Number(sp.sl) || 950;
-    const riskReward = Math.abs((tpNum - entryNum) / (entryNum - slNum)).toFixed(1);
+    const risk = Math.max(1, entryNum - slNum);
+    const reward = Math.max(1, tpNum - entryNum);
+    const riskReward = (reward / risk).toFixed(1);
 
-    card.innerHTML = `
-      <div class="flex items-start justify-between">
-        <div class="flex items-center gap-2.5">
-          <span class="px-2.5 py-1 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold text-base font-mono">
-            ${sp.ticker}
+    // Status Banner
+    let statusBannerHtml = "";
+    if (sp.status === 'HIT_TP') {
+      statusBannerHtml = `
+        <div class="px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-mono font-bold text-xs flex items-center justify-between shadow">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="target" class="w-4 h-4 text-emerald-400"></i>
+            TARGET PROFIT HIT (TERCAPAI) 🎯
           </span>
-          <div>
-            <h4 class="font-bold text-white text-sm font-sans">${sp.title}</h4>
-            <span class="text-[10px] text-slate-400 font-mono">${sp.date || 'Riset Terverifikasi'} &bull; ${sp.author || 'Tim Analis'}</span>
+          <span class="text-white">Exit: Rp ${Number(sp.exit_price || tpNum).toLocaleString('id-ID')}</span>
+        </div>
+      `;
+    } else if (sp.status === 'HIT_SL') {
+      statusBannerHtml = `
+        <div class="px-3 py-1.5 rounded-lg bg-rose-950/80 border border-rose-500/50 text-rose-300 font-mono font-bold text-xs flex items-center justify-between shadow">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
+            STOP LOSS HIT (BATAS RESIKO) ⚠️
+          </span>
+          <span class="text-white">Exit: Rp ${Number(sp.exit_price || slNum).toLocaleString('id-ID')}</span>
+        </div>
+      `;
+    } else if (sp.status === 'CLOSED') {
+      statusBannerHtml = `
+        <div class="px-3 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-mono font-bold text-xs flex items-center justify-between shadow">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-4 h-4 text-cyan-400"></i>
+            POSISI CLOSED / SELESAI ✅
+          </span>
+          <span class="text-white">Exit: Rp ${Number(sp.exit_price || entryNum).toLocaleString('id-ID')}</span>
+        </div>
+      `;
+    }
+
+    // Daily Price Tracking Table HTML
+    const trackingRows = (sp.daily_tracking && Array.isArray(sp.daily_tracking)) ? sp.daily_tracking : generateDailyTracking(sp.ticker, sp.entry, null);
+    // Ensure it is saved back
+    sp.daily_tracking = trackingRows;
+
+    let dailyTableRows = trackingRows.map(row => {
+      const isPositive = row.change >= 0;
+      const chgColor = isPositive ? 'text-emerald-400' : 'text-rose-400';
+      const chgSign = isPositive ? '+' : '';
+      const vsPos = row.vsEntryPct >= 0;
+      const vsColor = vsPos ? 'text-emerald-400' : 'text-rose-400';
+      const vsSign = vsPos ? '+' : '';
+
+      return `
+        <tr class="hover:bg-[#1a1f2c] transition">
+          <td class="py-1.5 px-2 text-slate-300 font-mono text-[11px] whitespace-nowrap">${row.date}</td>
+          <td class="py-1.5 px-2 text-right font-bold text-white font-mono text-[11px]">Rp ${Number(row.close).toLocaleString('id-ID')}</td>
+          <td class="py-1.5 px-2 text-right font-mono text-[11px] font-bold ${chgColor} whitespace-nowrap">
+            ${chgSign}${Number(row.change).toLocaleString('id-ID')} (${chgSign}${row.changePct}%)
+          </td>
+          <td class="py-1.5 px-2 text-right font-mono text-[11px] font-bold ${vsColor} whitespace-nowrap">
+            ${vsSign}${row.vsEntryPct}%
+          </td>
+          <td class="py-1.5 px-2 text-center whitespace-nowrap">
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${vsPos ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40' : 'bg-rose-950/60 text-rose-400 border border-rose-800/40'}">
+              ${row.status || 'Active'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Card Inner HTML
+    card.innerHTML = `
+      <div class="space-y-3.5">
+        ${statusBannerHtml}
+
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-3">
+            <span class="px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-extrabold text-lg font-mono tracking-wider shadow-sm">
+              ${sp.ticker}
+            </span>
+            <div>
+              <h4 class="font-bold text-white text-sm font-sans leading-snug">${sp.title}</h4>
+              <span class="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
+                <i data-lucide="clock" class="w-3 h-3 text-slate-500"></i>
+                <span>${sp.date || 'Riset Terverifikasi'} &bull; ${sp.author || 'Tim Lapin IDX'}</span>
+              </span>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-lg bg-[#161920] text-cyan-300 border border-[#2a2e3d] text-[10px] font-mono font-bold whitespace-nowrap">
+            R:R 1:${riskReward}
+          </span>
+        </div>
+
+        <!-- Levels: Entry, TP, SL -->
+        <div class="grid grid-cols-3 gap-2 py-2 border-y border-[#2a2e3d] text-center font-mono text-xs">
+          <div class="p-2 rounded-lg bg-[#161920] border border-[#2a2e3d]">
+            <span class="text-[10px] text-slate-400 block font-bold">ENTRY</span>
+            <span class="font-bold text-white">Rp ${entryNum.toLocaleString('id-ID')}</span>
+          </div>
+          <div class="p-2 rounded-lg bg-emerald-950/30 border border-emerald-900/50">
+            <span class="text-[10px] text-emerald-400 block font-bold">TARGET (TP)</span>
+            <span class="font-bold text-emerald-400">Rp ${tpNum.toLocaleString('id-ID')}</span>
+          </div>
+          <div class="p-2 rounded-lg bg-rose-950/30 border border-rose-900/50">
+            <span class="text-[10px] text-rose-400 block font-bold">STOP LOSS (SL)</span>
+            <span class="font-bold text-rose-400">Rp ${slNum.toLocaleString('id-ID')}</span>
           </div>
         </div>
-        <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-[10px] font-mono font-bold">
-          R:R 1:${riskReward}
-        </span>
+
+        <!-- Analisis TA & Bandar -->
+        <div class="space-y-2 text-xs font-sans">
+          <div class="p-2.5 rounded-xl bg-[#161920] border border-[#2a2e3d]">
+            <strong class="text-cyan-400 font-mono text-[11px] block mb-0.5 flex items-center gap-1.5">
+              <i data-lucide="line-chart" class="w-3.5 h-3.5 text-cyan-400"></i>
+              Analisis Teknikal (TA):
+            </strong>
+            <p class="text-slate-300 leading-relaxed text-xs">${sp.ta_rationale || '-'}</p>
+          </div>
+          <div class="p-2.5 rounded-xl bg-[#161920] border border-[#2a2e3d]">
+            <strong class="text-amber-400 font-mono text-[11px] block mb-0.5 flex items-center gap-1.5">
+              <i data-lucide="coins" class="w-3.5 h-3.5 text-amber-400"></i>
+              Analisis Bandarmologi &amp; Arus Kas:
+            </strong>
+            <p class="text-slate-300 leading-relaxed text-xs">${sp.bandar_rationale || '-'}</p>
+          </div>
+        </div>
+
+        <!-- LAMPIRAN FOTO CHART DENGAN 1 WATERMARK TENGAH -->
+        ${sp.image ? `
+          <div class="mt-2 rounded-xl overflow-hidden border border-[#2a2e3d] bg-[#0c0e14] group relative">
+            <img
+              src="${sp.image}"
+              alt="Chart ${sp.ticker}"
+              onclick="openImageModal('${sp.id}')"
+              class="w-full max-h-72 object-contain mx-auto cursor-zoom-in group-hover:scale-[1.01] transition duration-200"
+            />
+            <button
+              type="button"
+              onclick="openImageModal('${sp.id}')"
+              class="absolute bottom-2 right-2 px-2.5 py-1 rounded bg-slate-900/85 hover:bg-slate-800 border border-slate-700 text-[11px] font-mono text-cyan-300 flex items-center gap-1.5 shadow"
+            >
+              <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+              <span>Perbesar Chart</span>
+            </button>
+          </div>
+        ` : ''}
+
+        <!-- TABEL REKAM JEJAK PERUBAHAN HARGA HARIAN (PRICE TRACKING) -->
+        <div class="mt-3 rounded-xl border border-[#2a2e3d] bg-[#0f1219] p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold text-cyan-400 flex items-center gap-1.5">
+              <i data-lucide="table" class="w-3.5 h-3.5 text-cyan-400"></i>
+              REKAM JEJAK PERUBAHAN HARGA HARIAN:
+            </span>
+            <span class="text-[10px] font-mono text-slate-400">Baseline Entry: Rp ${entryNum.toLocaleString('id-ID')}</span>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border border-[#232734]">
+            <table class="w-full text-left font-mono text-[11px] border-collapse bg-[#141721]">
+              <thead>
+                <tr class="border-b border-[#232734] text-slate-400 text-[10px] bg-[#10131d]">
+                  <th class="py-1.5 px-2 font-bold">HARI / TANGGAL</th>
+                  <th class="py-1.5 px-2 font-bold text-right">CLOSE</th>
+                  <th class="py-1.5 px-2 font-bold text-right">CHANGE (DAY)</th>
+                  <th class="py-1.5 px-2 font-bold text-right">VS ENTRY</th>
+                  <th class="py-1.5 px-2 font-bold text-center">STATUS</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#1e2330]">
+                ${dailyTableRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-2 py-2 border-y border-[#2a2e3d] text-center font-mono text-xs">
-        <div class="p-2 rounded-lg bg-[#161920] border border-[#2a2e3d]">
-          <span class="text-[10px] text-slate-400 block font-bold">ENTRY</span>
-          <span class="font-bold text-white">Rp ${entryNum.toLocaleString('id-ID')}</span>
-        </div>
-        <div class="p-2 rounded-lg bg-emerald-950/30 border border-emerald-900/50">
-          <span class="text-[10px] text-emerald-400 block font-bold">TARGET (TP)</span>
-          <span class="font-bold text-emerald-400">Rp ${tpNum.toLocaleString('id-ID')}</span>
-        </div>
-        <div class="p-2 rounded-lg bg-rose-950/30 border border-rose-900/50">
-          <span class="text-[10px] text-rose-400 block font-bold">STOP LOSS (SL)</span>
-          <span class="font-bold text-rose-400">Rp ${slNum.toLocaleString('id-ID')}</span>
-        </div>
-      </div>
+      <!-- ADMIN CONTROLS TOOLBAR (HANYA MUNCUL DI MODE ADMIN) -->
+      ${isAdmin ? `
+        <div class="mt-3 pt-3 border-t border-[#2a2e3d] flex items-center justify-between gap-2 flex-wrap bg-[#151922] -mx-5 -mb-5 px-5 py-3 rounded-b-2xl">
+          <div class="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono font-bold">
+            <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+            <span>ADMIN KONTROL:</span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onclick="openEditStockpickModal('${sp.id}')"
+              class="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold transition flex items-center gap-1.5"
+            >
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              <span>Edit Data / Foto</span>
+            </button>
 
-      <div class="space-y-2 text-xs font-sans">
-        <div class="p-2.5 rounded-xl bg-[#161920] border border-[#2a2e3d]">
-          <strong class="text-cyan-400 font-mono text-[11px] block mb-0.5">Analisis Teknikal (TA):</strong>
-          <p class="text-slate-300 leading-relaxed">${sp.ta_rationale || '-'}</p>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#161920] border border-[#2a2e3d]">
-          <strong class="text-amber-400 font-mono text-[11px] block mb-0.5">Analisis Bandarmologi &amp; Arus Kas:</strong>
-          <p class="text-slate-300 leading-relaxed">${sp.bandar_rationale || '-'}</p>
-        </div>
-      </div>
+            <button
+              type="button"
+              onclick="openCloseStockpickModal('${sp.id}')"
+              class="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 font-mono text-xs font-bold transition flex items-center gap-1.5"
+            >
+              <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+              <span>Close / Hit Status</span>
+            </button>
 
-      ${sp.image ? `
-        <div class="mt-2 rounded-xl overflow-hidden border border-[#2a2e3d]">
-          <img src="${sp.image}" alt="Chart ${sp.ticker}" class="w-full h-auto object-cover" />
+            <button
+              type="button"
+              onclick="handleDeleteStockpick('${sp.id}')"
+              class="px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 font-mono text-xs font-bold transition flex items-center gap-1.5"
+            >
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Hapus</span>
+            </button>
+          </div>
         </div>
       ` : ''}
     `;
+
     grid.appendChild(card);
   });
-}
 
+  if (window.lucide) window.lucide.createIcons();
+}
+window.renderStockpicksGrid = renderStockpicksGrid;
+
+// 4. Publish New Stockpick Handler
 async function handlePublishStockpick(e) {
   if (e) e.preventDefault();
   const ticker = document.getElementById('sp-ticker')?.value.trim().toUpperCase();
@@ -1722,40 +2147,264 @@ async function handlePublishStockpick(e) {
   const bandar_rationale = document.getElementById('sp-bandar')?.value.trim();
   const btn = document.getElementById('btn-publish-sp');
 
-  if (!ticker || !title) {
-    showToast('Harap lengkapi kode emiten dan judul stockpick', 'error');
+  if (!ticker || !title || !entry || !tp || !sl) {
+    showToast('Harap lengkapi kode emiten, level entry, TP, SL, dan judul', 'error');
     return;
   }
 
   if (btn) btn.disabled = true;
 
+  const now = new Date();
+  const dateFormatted = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + `, ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
+
+  // Generate Daily Price Tracking Table records automatically
+  const dailyTracking = generateDailyTracking(ticker, entry, null);
+
   const newPick = {
+    id: `sp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     ticker,
     title,
     entry,
     tp,
     sl,
-    ta_rationale,
-    bandar_rationale,
+    status: "ACTIVE",
+    ta_rationale: ta_rationale || `Breakout area akumulasi dengan volume meningkat. Target resistensi terdekat di Rp ${Number(tp).toLocaleString('id-ID')}.`,
+    bandar_rationale: bandar_rationale || `Inflow akumulasi teratur oleh institusi. Rasio Risk/Reward menarik.`,
     author: currentUser?.name || "Admin Lapin IDX",
-    date: "Baru saja",
-    image: watermarkedImageData || ""
+    date: dateFormatted,
+    image: watermarkedImageData || "",
+    daily_tracking: dailyTracking
   };
 
   stockpicks.unshift(newPick);
+  saveStockpicksLocally();
   renderStockpicksGrid();
   clearWatermark();
 
-  // Reset form
-  document.getElementById('sp-ticker').value = '';
-  document.getElementById('sp-title').value = '';
-  document.getElementById('sp-entry').value = '';
-  document.getElementById('sp-tp').value = '';
-  document.getElementById('sp-sl').value = '';
-  document.getElementById('sp-ta').value = '';
-  document.getElementById('sp-bandar').value = '';
+  // Reset form inputs
+  const inputs = ['sp-ticker', 'sp-title', 'sp-entry', 'sp-tp', 'sp-sl', 'sp-ta', 'sp-bandar'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
 
-  showToast(`Stockpick ${ticker} berhasil dipublikasikan!`);
+  showToast(`Stockpick ${ticker} berhasil dipublikasikan beserta tabel perubahan harga!`);
   if (btn) btn.disabled = false;
 }
 window.handlePublishStockpick = handlePublishStockpick;
+
+// 5. Edit Stockpick Modal & Save Handler
+function openEditStockpickModal(id) {
+  const sp = stockpicks.find(x => x.id === id);
+  if (!sp) {
+    showToast('Data stockpick tidak ditemukan', 'error');
+    return;
+  }
+
+  document.getElementById('edit-sp-id').value = sp.id;
+  document.getElementById('edit-sp-ticker').value = sp.ticker;
+  document.getElementById('edit-sp-entry').value = sp.entry;
+  document.getElementById('edit-sp-tp').value = sp.tp;
+  document.getElementById('edit-sp-sl').value = sp.sl;
+  document.getElementById('edit-sp-title').value = sp.title;
+  document.getElementById('edit-sp-status').value = sp.status || 'ACTIVE';
+  document.getElementById('edit-sp-ta').value = sp.ta_rationale || '';
+  document.getElementById('edit-sp-bandar').value = sp.bandar_rationale || '';
+
+  // Current photo handling
+  const curBox = document.getElementById('edit-current-image-box');
+  const curImg = document.getElementById('edit-current-img-preview');
+  if (sp.image) {
+    if (curBox) curBox.classList.remove('hidden');
+    if (curImg) curImg.src = sp.image;
+    editWatermarkedImageData = sp.image;
+  } else {
+    if (curBox) curBox.classList.add('hidden');
+    if (curImg) curImg.src = "";
+    editWatermarkedImageData = "";
+  }
+
+  clearEditWatermark();
+
+  const modal = document.getElementById('modal-edit-stockpick');
+  if (modal) modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+}
+window.openEditStockpickModal = openEditStockpickModal;
+
+function closeEditStockpickModal() {
+  const modal = document.getElementById('modal-edit-stockpick');
+  if (modal) modal.classList.add('hidden');
+  clearEditWatermark();
+}
+window.closeEditStockpickModal = closeEditStockpickModal;
+
+function handleSaveEditStockpick(e) {
+  if (e) e.preventDefault();
+  const id = document.getElementById('edit-sp-id')?.value;
+  const sp = stockpicks.find(x => x.id === id);
+  if (!sp) {
+    showToast('Data stockpick tidak ditemukan', 'error');
+    return;
+  }
+
+  const oldEntry = sp.entry;
+  const newEntry = document.getElementById('edit-sp-entry')?.value.trim();
+
+  sp.ticker = document.getElementById('edit-sp-ticker')?.value.trim().toUpperCase();
+  sp.entry = newEntry;
+  sp.tp = document.getElementById('edit-sp-tp')?.value.trim();
+  sp.sl = document.getElementById('edit-sp-sl')?.value.trim();
+  sp.title = document.getElementById('edit-sp-title')?.value.trim();
+  sp.status = document.getElementById('edit-sp-status')?.value;
+  sp.ta_rationale = document.getElementById('edit-sp-ta')?.value.trim();
+  sp.bandar_rationale = document.getElementById('edit-sp-bandar')?.value.trim();
+
+  // Handle Photo
+  if (editWatermarkedImageData === "REMOVED") {
+    sp.image = "";
+  } else if (editWatermarkedImageData) {
+    sp.image = editWatermarkedImageData;
+  }
+
+  // Update daily tracking if entry changed
+  if (oldEntry !== newEntry) {
+    sp.daily_tracking = generateDailyTracking(sp.ticker, newEntry, null);
+  }
+
+  saveStockpicksLocally();
+  renderStockpicksGrid();
+  closeEditStockpickModal();
+  showToast(`Perubahan stockpick ${sp.ticker} berhasil disimpan!`);
+}
+window.handleSaveEditStockpick = handleSaveEditStockpick;
+
+// 6. Close / Hit Stockpick Handler
+function openCloseStockpickModal(id) {
+  const sp = stockpicks.find(x => x.id === id);
+  if (!sp) return;
+
+  document.getElementById('close-sp-id').value = sp.id;
+  document.getElementById('close-sp-ticker').textContent = sp.ticker;
+  document.getElementById('close-sp-entry').textContent = `Rp ${Number(sp.entry).toLocaleString('id-ID')}`;
+  document.getElementById('close-sp-target').textContent = `Rp ${Number(sp.tp).toLocaleString('id-ID')} / Rp ${Number(sp.sl).toLocaleString('id-ID')}`;
+
+  const select = document.getElementById('close-sp-status');
+  if (select) select.value = sp.status === 'ACTIVE' ? 'HIT_TP' : sp.status;
+
+  updateCloseModalPresets();
+
+  const modal = document.getElementById('modal-close-stockpick');
+  if (modal) modal.classList.remove('hidden');
+}
+window.openCloseStockpickModal = openCloseStockpickModal;
+
+function updateCloseModalPresets() {
+  const id = document.getElementById('close-sp-id')?.value;
+  const sp = stockpicks.find(x => x.id === id);
+  if (!sp) return;
+
+  const status = document.getElementById('close-sp-status')?.value;
+  const exitInput = document.getElementById('close-sp-exit-price');
+  const noteInput = document.getElementById('close-sp-note');
+
+  if (status === 'HIT_TP') {
+    if (exitInput) exitInput.value = sp.tp;
+    const gainPct = (((sp.tp - sp.entry) / sp.entry) * 100).toFixed(1);
+    if (noteInput) noteInput.value = `Target profit tercapai di resistance Rp ${Number(sp.tp).toLocaleString('id-ID')} (+${gainPct}%)`;
+  } else if (status === 'HIT_SL') {
+    if (exitInput) exitInput.value = sp.sl;
+    const lossPct = (((sp.sl - sp.entry) / sp.entry) * 100).toFixed(1);
+    if (noteInput) noteInput.value = `Stop loss tersentuh di Rp ${Number(sp.sl).toLocaleString('id-ID')} (${lossPct}%), batasi resiko modal`;
+  } else {
+    if (exitInput) exitInput.value = sp.entry;
+    if (noteInput) noteInput.value = `Posisi ditutup manual oleh analis`;
+  }
+}
+window.updateCloseModalPresets = updateCloseModalPresets;
+
+function closeCloseStockpickModal() {
+  const modal = document.getElementById('modal-close-stockpick');
+  if (modal) modal.classList.add('hidden');
+}
+window.closeCloseStockpickModal = closeCloseStockpickModal;
+
+function handleConfirmCloseStockpick(e) {
+  if (e) e.preventDefault();
+  const id = document.getElementById('close-sp-id')?.value;
+  const sp = stockpicks.find(x => x.id === id);
+  if (!sp) return;
+
+  const status = document.getElementById('close-sp-status')?.value;
+  const exitPrice = Number(document.getElementById('close-sp-exit-price')?.value) || sp.tp;
+  const note = document.getElementById('close-sp-note')?.value.trim();
+
+  sp.status = status;
+  sp.exit_price = exitPrice;
+  sp.close_note = note;
+
+  // Add final row to daily tracking
+  const now = new Date();
+  const dateFormatted = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+  const vsEntryPct = Number((((exitPrice - sp.entry) / sp.entry) * 100).toFixed(2));
+  
+  if (Array.isArray(sp.daily_tracking)) {
+    sp.daily_tracking.push({
+      date: `${dateFormatted} (Exit Realisasi)`,
+      close: exitPrice,
+      change: exitPrice - (sp.daily_tracking[sp.daily_tracking.length - 1]?.close || sp.entry),
+      changePct: Number((((exitPrice - (sp.daily_tracking[sp.daily_tracking.length - 1]?.close || sp.entry)) / (sp.daily_tracking[sp.daily_tracking.length - 1]?.close || sp.entry)) * 100).toFixed(2)),
+      vsEntryPct: vsEntryPct,
+      status: status === 'HIT_TP' ? '🎯 HIT TP' : (status === 'HIT_SL' ? '⚠️ HIT SL' : '✅ CLOSED')
+    });
+  }
+
+  saveStockpicksLocally();
+  renderStockpicksGrid();
+  closeCloseStockpickModal();
+  showToast(`Stockpick ${sp.ticker} telah di-update menjadi ${status}!`);
+}
+window.handleConfirmCloseStockpick = handleConfirmCloseStockpick;
+
+// 7. Delete Stockpick Handler
+function handleDeleteStockpick(id) {
+  const sp = stockpicks.find(x => x.id === id);
+  if (!sp) return;
+
+  if (!confirm(`Apakah Anda yakin ingin menghapus ide stockpick ${sp.ticker}?`)) {
+    return;
+  }
+
+  stockpicks = stockpicks.filter(x => x.id !== id);
+  saveStockpicksLocally();
+  renderStockpicksGrid();
+  showToast(`Stockpick ${sp.ticker} telah berhasil dihapus.`, 'info');
+}
+window.handleDeleteStockpick = handleDeleteStockpick;
+
+// 8. Image Modal Zoom Handler
+function openImageModal(idOrSrc) {
+  const modal = document.getElementById('modal-image-preview');
+  const imgEl = document.getElementById('image-modal-src');
+  const titleEl = document.getElementById('image-modal-title');
+  if (!modal || !imgEl) return;
+
+  const sp = stockpicks.find(x => x.id === idOrSrc);
+  if (sp && sp.image) {
+    imgEl.src = sp.image;
+    if (titleEl) titleEl.textContent = `CHART ${sp.ticker} - LAMPIRAN RISET TERVERIFIKASI LAPIN IDX`;
+  } else if (typeof idOrSrc === 'string' && idOrSrc.startsWith('data:')) {
+    imgEl.src = idOrSrc;
+    if (titleEl) titleEl.textContent = `LAMPIRAN CHART TERVERIFIKASI LAPIN IDX`;
+  }
+
+  modal.classList.remove('hidden');
+}
+window.openImageModal = openImageModal;
+
+function closeImageModal() {
+  const modal = document.getElementById('modal-image-preview');
+  if (modal) modal.classList.add('hidden');
+}
+window.closeImageModal = closeImageModal;
+
