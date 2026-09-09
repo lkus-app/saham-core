@@ -12,8 +12,8 @@
 
     // Chart.js instances & interactive state
     let chartPrice = null;
-    let chartRsi = null;
-    let chartMacd = null;
+    let oscillatorChartInstance = null;
+    let currentOscMode = 'MACD';
     let chartDisplayMode = 'candlestick'; // 'candlestick' or 'line'
     let currentChartData = null;
 
@@ -1508,6 +1508,29 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       chgElem.className = isPos ? 'font-bold text-emerald-400 font-mono text-sm' : 'font-bold text-rose-400 font-mono text-sm';
       document.getElementById('m-vol').textContent = stock.volume || '25.4M';
 
+      const prevClose = Math.round(safeClose / (1 + (safeChg / 100)));
+      let numVol = 25400000;
+      if (typeof stock.volume === 'number') numVol = stock.volume;
+      else if (stock.rawVolume) numVol = stock.rawVolume;
+      else if (typeof stock.volume === 'string') {
+        const m = stock.volume.match(/([\d.]+)\s*([KkMmBbTt]?)/);
+        if (m) {
+          const val = parseFloat(m[1]);
+          const unit = m[2].toUpperCase();
+          numVol = unit === 'B' ? val * 1e9 : unit === 'M' ? val * 1e6 : unit === 'K' ? val * 1e3 : val;
+        }
+      }
+
+      window.currentSelectedStockData = {
+        ...stock,
+        close: safeClose,
+        prev_close: prevClose,
+        volume: numVol,
+        macd: typeof stock.macd === 'number' ? stock.macd : (safeChg >= 0 ? 12.8 : -9.4),
+        macd_signal: typeof stock.macd_signal === 'number' ? stock.macd_signal : (safeChg >= 0 ? 9.6 : -6.1),
+        rsi_14: typeof stock.rsi === 'number' ? stock.rsi : 50
+      };
+
       // Pivots
       document.getElementById('m-r2').textContent = `Rp ${Math.round(safeClose * 1.05).toLocaleString('id-ID')}`;
       document.getElementById('m-r1').textContent = `Rp ${Math.round(safeClose * 1.025).toLocaleString('id-ID')}`;
@@ -2116,127 +2139,199 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
       }
 
       // =================================================================
-      // 2. RSI (14) SUB-CHART
+      // 2. MULTI-OSCILLATOR SUB-CHART (MACD / RSI / VOLUME / A/D)
       // =================================================================
-      if (chartRsi && chartRsi.ctx) {
-        chartRsi.data.labels = chartData.labels;
-        chartRsi.data.datasets[0].data = chartData.rsi;
-        chartRsi.update({
-          duration: 750,
-          easing: 'easeOutQuart'
-        });
-      } else {
-        if (chartRsi) chartRsi.destroy();
-        const ctxRsi = document.getElementById('chart-canvas-rsi').getContext('2d');
-        chartRsi = new Chart(ctxRsi, {
-          type: 'line',
-          data: {
-            labels: chartData.labels,
-            datasets: [{
-              label: 'RSI(14)',
-              data: chartData.rsi,
-              borderColor: '#38bdf8',
-              borderWidth: 1.8,
-              pointRadius: 0,
-              tension: 0.15
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-              duration: 800,
-              easing: 'easeOutQuart'
-            },
-            transitions: {
-              active: {
-                animation: {
-                  duration: 180,
-                  easing: 'easeOutQuad'
-                }
-              }
-            },
-            plugins: { 
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: '#090d16',
-                borderColor: '#334155',
-                borderWidth: 1,
-                bodyFont: { family: 'JetBrains Mono', size: 10 },
-              }
-            },
-            scales: {
-              x: { display: false },
-              y: { 
-                min: 15, 
-                max: 85, 
-                grid: { color: '#1e293b' }, 
-                ticks: { color: '#64748b', stepSize: 25, font: { family: 'JetBrains Mono', size: 9 } } 
-              }
-            }
-          }
-        });
+      if (currentChartData) {
+        window.currentSelectedStockData = {
+          ...window.currentSelectedStockData,
+          ...stock,
+          labels: currentChartData.labels,
+          closes: currentChartData.prices,
+          opens: currentChartData.ohlc ? currentChartData.ohlc.map(b => b.open) : undefined,
+          volumes: currentChartData.volumes,
+          close: stock.close || 5000,
+          prev_close: window.currentSelectedStockData?.prev_close || (stock.close * 0.99),
+          volume: window.currentSelectedStockData?.volume || 25400000,
+          macd: typeof stock.macd === 'number' ? stock.macd : (stock.change >= 0 ? 12.8 : -9.4),
+          macd_signal: typeof stock.macd_signal === 'number' ? stock.macd_signal : (stock.change >= 0 ? 9.6 : -6.1),
+          rsi_14: typeof stock.rsi === 'number' ? stock.rsi : 50
+        };
       }
-
-      // =================================================================
-      // 3. MACD HISTOGRAM SUB-CHART
-      // =================================================================
-      if (chartMacd && chartMacd.ctx) {
-        chartMacd.data.labels = chartData.labels;
-        chartMacd.data.datasets[0].data = chartData.macdHist;
-        chartMacd.data.datasets[0].backgroundColor = chartData.macdHist.map(v => v >= 0 ? '#10b981' : '#f43f5e');
-        chartMacd.update({
-          duration: 750,
-          easing: 'easeOutQuart'
-        });
-      } else {
-        if (chartMacd) chartMacd.destroy();
-        const ctxMacd = document.getElementById('chart-canvas-macd').getContext('2d');
-        chartMacd = new Chart(ctxMacd, {
-          type: 'bar',
-          data: {
-            labels: chartData.labels,
-            datasets: [{
-              label: 'MACD Hist',
-              data: chartData.macdHist,
-              backgroundColor: chartData.macdHist.map(v => v >= 0 ? '#10b981' : '#f43f5e'),
-              borderRadius: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-              duration: 800,
-              easing: 'easeOutQuart'
-            },
-            transitions: {
-              active: {
-                animation: {
-                  duration: 180,
-                  easing: 'easeOutQuad'
-                }
-              }
-            },
-            plugins: { 
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: '#090d16',
-                borderColor: '#334155',
-                borderWidth: 1,
-                bodyFont: { family: 'JetBrains Mono', size: 10 },
-              }
-            },
-            scales: {
-              x: { display: false },
-              y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 5 } }
-            }
-          }
-        });
-      }
+      renderOscillatorChart(window.currentSelectedStockData);
 
       hideChartLoading();
     }
+
+
+
+    // 2. Fungsi Render Chart Multi-Oscillator
+    function renderOscillatorChart(stockData) {
+      const canvas = document.getElementById('chart-canvas-oscillator');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      if (oscillatorChartInstance) {
+        oscillatorChartInstance.destroy();
+      }
+
+      stockData = stockData || window.currentSelectedStockData || {};
+      if (typeof stockData.macd !== 'number') stockData.macd = 12.5;
+      if (typeof stockData.macd_signal !== 'number') stockData.macd_signal = 10.2;
+      if (typeof stockData.rsi_14 !== 'number') stockData.rsi_14 = stockData.rsi || 50;
+      if (!stockData.close) stockData.close = 5000;
+      if (!stockData.prev_close) stockData.prev_close = stockData.close * 0.99;
+      if (!stockData.volume) stockData.volume = 25400000;
+
+      const labels = stockData.labels || ['T-4', 'T-3', 'T-2', 'Kemarin', 'Hari Ini'];
+      const closes = stockData.closes || [stockData.close * 0.97, stockData.close * 0.98, stockData.close * 0.99, stockData.prev_close, stockData.close];
+      const opens = stockData.opens || closes.map(c => c * 0.995);
+      const volumes = stockData.volumes || [stockData.volume * 0.8, stockData.volume * 1.1, stockData.volume * 0.9, stockData.volume * 1.2, stockData.volume];
+
+      let datasets = [];
+      let yAxisConfig = { ticks: { color: '#64748b' }, grid: { color: '#22293a' } };
+
+      if (currentOscMode === 'MACD') {
+        const macdLine = [stockData.macd * 0.7, stockData.macd * 0.8, stockData.macd * 0.9, stockData.macd * 0.95, stockData.macd];
+        const sigLine = [stockData.macd_signal * 0.7, stockData.macd_signal * 0.8, stockData.macd_signal * 0.85, stockData.macd_signal * 0.9, stockData.macd_signal];
+        const hist = macdLine.map((val, idx) => val - sigLine[idx]);
+
+        datasets = [
+          {
+            type: 'bar',
+            label: 'MACD Histogram',
+            data: hist,
+            backgroundColor: hist.map(h => h >= 0 ? '#10b981' : '#f43f5e'),
+            borderRadius: 2
+          },
+          {
+            type: 'line',
+            label: 'MACD Line (12, 26)',
+            data: macdLine,
+            borderColor: '#38bdf8',
+            borderWidth: 2,
+            pointRadius: 0
+          },
+          {
+            type: 'line',
+            label: 'Signal Line (9)',
+            data: sigLine,
+            borderColor: '#f59e0b',
+            borderWidth: 2,
+            pointRadius: 0
+          }
+        ];
+        const statusLabel = document.getElementById('osc-status-label');
+        if (statusLabel) statusLabel.textContent = `MACD: ${stockData.macd.toFixed(1)} | Signal: ${stockData.macd_signal.toFixed(1)}`;
+      } else if (currentOscMode === 'RSI') {
+        const rsiVal = stockData.rsi_14 || 50;
+        const rsiSeries = [rsiVal - 5, rsiVal - 3, rsiVal - 1, rsiVal + 1, rsiVal];
+
+        datasets = [
+          {
+            type: 'line',
+            label: 'RSI (14)',
+            data: rsiSeries,
+            borderColor: '#a855f7',
+            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 2
+          }
+        ];
+        yAxisConfig.min = 0;
+        yAxisConfig.max = 100;
+        const statusLabel = document.getElementById('osc-status-label');
+        if (statusLabel) statusLabel.textContent = `RSI: ${rsiVal} (${rsiVal >= 70 ? 'Overbought' : rsiVal <= 30 ? 'Oversold' : 'Neutral'})`;
+      } else if (currentOscMode === 'VOL') {
+        const volMa = volumes.reduce((a, b) => a + b, 0) / volumes.length;
+        const volMaSeries = volumes.map(() => volMa);
+
+        datasets = [
+          {
+            type: 'bar',
+            label: 'Volume',
+            data: volumes,
+            backgroundColor: closes.map((c, i) => c >= opens[i] ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)'),
+            borderRadius: 2
+          },
+          {
+            type: 'line',
+            label: 'Volume MA (20)',
+            data: volMaSeries,
+            borderColor: '#eab308',
+            borderWidth: 2,
+            pointRadius: 0
+          }
+        ];
+        const statusLabel = document.getElementById('osc-status-label');
+        if (statusLabel) statusLabel.textContent = `Vol: ${(stockData.volume / 1000000).toFixed(1)}M | MA: ${(volMa / 1000000).toFixed(1)}M`;
+      } else if (currentOscMode === 'AD') {
+        let adCum = 0;
+        const adSeries = closes.map((c, i) => {
+          const high = c * 1.01;
+          const low = opens[i] * 0.99;
+          const mfm = ((c - low) - (high - c)) / (high - low || 1);
+          adCum += (mfm * volumes[i]);
+          return adCum;
+        });
+
+        datasets = [
+          {
+            type: 'line',
+            label: 'A/D Line',
+            data: adSeries,
+            borderColor: '#06b6d4',
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 2
+          }
+        ];
+        const isAccum = (adSeries[4] !== undefined && adSeries[3] !== undefined ? adSeries[4] >= adSeries[3] : (adSeries[adSeries.length - 1] >= adSeries[adSeries.length - 2]));
+        const statusLabel = document.getElementById('osc-status-label');
+        if (statusLabel) statusLabel.textContent = `A/D Status: ${isAccum ? 'Akumulasi Asing/Bandar' : 'Distribusi'}`;
+      }
+
+      oscillatorChartInstance = new Chart(ctx, {
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } } }
+          },
+          scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: '#22293a' } },
+            y: yAxisConfig
+          }
+        }
+      });
+    }
+    window.renderOscillatorChart = renderOscillatorChart;
+
+    // 1. Fungsi Switcher Mode
+    function setOscillatorMode(mode, btnElem) {
+      currentOscMode = mode;
+      
+      document.querySelectorAll('.osc-btn').forEach(btn => {
+        btn.className = "osc-btn px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-[#1a1d26] border border-[#2a2e3d] text-slate-300 hover:bg-[#232836] transition";
+      });
+      if (btnElem) {
+        btnElem.className = "osc-btn active px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-cyan-600 text-slate-950 transition";
+      } else {
+        document.querySelectorAll('.osc-btn').forEach(btn => {
+          if (btn.getAttribute('onclick')?.includes(`'${mode}'`)) {
+            btn.className = "osc-btn active px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-cyan-600 text-slate-950 transition";
+          }
+        });
+      }
+
+      if (window.currentSelectedStockData) {
+        renderOscillatorChart(window.currentSelectedStockData);
+      } else {
+        renderOscillatorChart();
+      }
+    }
+    window.setOscillatorMode = setOscillatorMode;
 
     /**
      * Deterministic Generator: Each stock ticker produces a 100% DISTINCT price chart
@@ -2335,11 +2430,13 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
 
       const ema12 = calcEMA(prices, 12);
       const ema26 = calcEMA(prices, 26);
-      const macdLine = ema12.map((v, i) => v - ema26[i]);
-      const signalLine = calcEMA(macdLine, 9);
+      const macdLine = ema12.map((v, i) => parseFloat((v - ema26[i]).toFixed(1)));
+      const signalLine = calcEMA(macdLine, 9).map(v => parseFloat(v.toFixed(1)));
       const macdHist = macdLine.map((v, i) => parseFloat((v - signalLine[i]).toFixed(1)));
 
       const ohlc = [];
+      const volumes = [];
+      const baseVol = stock.rawVolume || 28000000;
       for (let i = 0; i < prices.length; i++) {
         const c = prices[i];
         const prevC = i > 0 ? prices[i - 1] : Math.round(c * 0.995);
@@ -2354,6 +2451,24 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
           close: c,
           date: labels[i]
         });
+        const v = Math.round(baseVol * (0.65 + ((spread / Math.max(1, c)) * 7) + (pseudoRandom() * 0.4)));
+        volumes.push(v);
+      }
+
+      const volumeMa20 = calcSMA(volumes, 20);
+
+      // Accumulation / Distribution Line calculation
+      let cumAD = 0;
+      const adLine = [];
+      for (let i = 0; i < ohlc.length; i++) {
+        const h = ohlc[i].high;
+        const l = ohlc[i].low;
+        const cl = ohlc[i].close;
+        const vol = volumes[i];
+        const range = h - l;
+        const mfm = range > 0 ? ((cl - l) - (h - cl)) / range : 0;
+        cumAD += Math.round((mfm * vol) / 10000);
+        adLine.push(cumAD);
       }
 
       return {
@@ -2363,11 +2478,16 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
         labels,
         prices,
         ohlc,
+        volumes,
+        volumeMa20,
         ma20: calcSMA(prices, 20),
         ma50: calcSMA(prices, 50),
         ma200: calcSMA(prices, 200),
         rsi: calcRSI(prices, 14),
-        macdHist
+        macdLine,
+        signalLine,
+        macdHist,
+        adLine
       };
     }
 
@@ -2629,3 +2749,5 @@ ${safeClose > entryMax ? `⚠️ Harga saat ini (+${(safeClose - entryMax)} poin
     window.clearWatermark = clearWatermark;
     window.handlePublishStockpick = handlePublishStockpick;
     window.fetchScreener = fetchScreener;
+    window.setOscillatorMode = setOscillatorMode;
+    window.renderOscillatorChart = renderOscillatorChart;
