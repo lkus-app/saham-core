@@ -2,7 +2,7 @@
 // LAPIN IDX - CORE APPLICATION ENGINE (/app.js)
 // ============================================================================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxp569_Wia0XPhzP81dSCcUte5kaK0nW2yM6GbpXYh5EeYsqwr-SiK_50M_qBeGUK1FfQ/exec";
+const API_URL = "https://lapin-idx-proxy.lkusdewanto.workers.dev";
 
 // Application Global State
 let allStocks = [];
