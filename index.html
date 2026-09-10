@@ -73,6 +73,34 @@
     .pulse-online {
       animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
+
+    /* Adaptive Sidebar Smooth Layout Transitions */
+    #main-sidebar {
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.25s ease-in-out;
+    }
+    @media (min-width: 768px) {
+      #main-sidebar.sidebar-minimized {
+        margin-left: -18rem; /* -w-72 (288px) */
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        border-right-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+    }
+    @media (max-width: 767px) {
+      #main-sidebar {
+        transform: translateX(-100%);
+      }
+      #main-sidebar.mobile-open {
+        transform: translateX(0);
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-[#161920] text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-300 technical-grid flex flex-col justify-between">
@@ -106,157 +134,52 @@
     </header>
 
     <main class="max-w-md w-full mx-auto my-auto py-8">
-      <div class="rounded-xl border border-[#2a2e3d] bg-[#1a1d26] shadow-2xl overflow-hidden">
-        <!-- macOS / Terminal Window Header -->
-        <div class="window-header px-4 py-3 border-b border-[#2a2e3d] flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-[#ef4444] inline-block"></span>
-            <span class="w-3 h-3 rounded-full bg-[#f59e0b] inline-block"></span>
-            <span class="w-3 h-3 rounded-full bg-[#10b981] inline-block"></span>
-            <span class="text-xs font-mono text-slate-400 ml-2">auth_console@lapin-idx</span>
-          </div>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#12151c] text-cyan-400 border border-[#2a2e3d]">SSH-256</span>
-        </div>
-
-        <div class="p-6 space-y-5">
-          <div class="space-y-1">
-            <h2 class="text-lg font-bold font-mono text-white flex items-center gap-2">
-              <i data-lucide="terminal" class="w-4 h-4 text-cyan-400"></i>
-              Terminal Login
-            </h2>
-            <p class="text-xs text-slate-400 font-mono">Masukkan kredensial akun member VIP atau analis core.</p>
-          </div>
-
-          <!-- Auth Mode Tabs -->
-          <div class="flex items-center gap-2 p-1 rounded-lg bg-[#12151c] border border-[#2a2e3d]">
-            <button
-              type="button"
-              id="tab-btn-standard"
-              onclick="switchAuthTab('standard')"
-              class="flex-1 py-2 rounded-lg font-mono text-xs font-bold transition bg-cyan-600 text-slate-950 shadow-sm flex items-center justify-center gap-1.5"
-            >
-              <i data-lucide="key" class="w-3.5 h-3.5"></i>
-              <span>EMAIL &amp; PASSWORD</span>
-            </button>
-            <button
-              type="button"
-              id="tab-btn-gauth"
-              onclick="switchAuthTab('gauth')"
-              class="flex-1 py-2 rounded-lg font-mono text-xs font-bold transition bg-[#12151c] text-slate-400 hover:text-white border border-[#2a2e3d] flex items-center justify-center gap-1.5"
-            >
-              <i data-lucide="mail-check" class="w-3.5 h-3.5"></i>
-              <span>GOOGLE / GMAIL</span>
-            </button>
-          </div>
-
-          <!-- Form 1: Standard Password Login -->
-          <form id="form-standard" onsubmit="handleStandardLogin(event)" class="space-y-4 font-mono text-xs">
-            <div class="space-y-1.5">
-              <label class="text-[11px] text-slate-300 font-semibold tracking-wide flex items-center justify-between">
-                <span>USER IDENTIFIER (EMAIL)</span>
-                <span class="text-cyan-400 text-[10px]">REQUIRED</span>
-              </label>
-              <div class="relative">
-                <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-                <input
-                  type="email"
-                  id="login-email"
-                  placeholder="admin@lapinidx.id / user@email.com"
-                  required
-                  class="w-full pl-9 pr-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] focus:border-cyan-400 focus:outline-none text-white text-xs font-mono transition placeholder:text-slate-600"
-                />
-              </div>
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[11px] text-slate-300 font-semibold tracking-wide flex items-center justify-between">
-                <span>ACCESS KEY (PASSWORD)</span>
-                <span class="text-slate-500 text-[10px]">ENCRYPTED</span>
-              </label>
-              <div class="relative">
-                <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-                <input
-                  type="password"
-                  id="login-password"
-                  placeholder="••••••••••••"
-                  required
-                  class="w-full pl-9 pr-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] focus:border-cyan-400 focus:outline-none text-white text-xs font-mono transition placeholder:text-slate-600"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              id="btn-login"
-              class="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold font-mono text-xs transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/30 active:scale-[0.99]"
-            >
-              <i data-lucide="key" class="w-3.5 h-3.5 text-slate-950"></i>
-              <span>AUTHENTICATE &amp; ENTER TERMINAL</span>
-            </button>
-          </form>
-
-          <!-- Form 2: Google / Gmail Submit (Strict Validation) -->
-          <form id="form-gauth" onsubmit="handleGoogleAuth(event)" class="hidden space-y-4 font-mono text-xs">
-            <div class="space-y-1.5">
-              <label class="text-[11px] text-slate-300 font-semibold tracking-wide flex items-center justify-between">
-                <span>NAMA LENGKAP / PENGGUNA</span>
-                <span class="text-cyan-400 text-[10px]">REQUIRED</span>
-              </label>
-              <div class="relative">
-                <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-                <input
-                  type="text"
-                  id="gauth-name"
-                  placeholder="Nama Lengkap Anda"
-                  required
-                  class="w-full pl-9 pr-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] focus:border-cyan-400 focus:outline-none text-white text-xs font-mono transition placeholder:text-slate-600"
-                />
-              </div>
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="text-[11px] text-slate-300 font-semibold tracking-wide flex items-center justify-between">
-                <span>AKUN GMAIL TERDAFTAR</span>
-                <span class="text-emerald-400 text-[10px]">VIP VERIFIED</span>
-              </label>
-              <div class="relative">
-                <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-                <input
-                  type="email"
-                  id="gauth-email"
-                  placeholder="nama.anda@gmail.com"
-                  required
-                  class="w-full pl-9 pr-3 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] focus:border-cyan-400 focus:outline-none text-white text-xs font-mono transition placeholder:text-slate-600"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              id="btn-gauth"
-              class="w-full py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold font-mono text-xs transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 active:scale-[0.99]"
-            >
-              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-slate-950"></i>
-              <span>VALIDATE GMAIL &amp; ENTER TERMINAL</span>
-            </button>
-          </form>
-
-          <!-- Quick access hints / demo accounts -->
-          <div class="p-3 rounded-lg bg-[#12151c] border border-[#2a2e3d] font-mono text-[11px] space-y-1.5">
-            <div class="text-slate-400 font-semibold flex items-center gap-1.5 text-[10px] uppercase text-cyan-400">
-              <i data-lucide="info" class="w-3.5 h-3.5"></i>
-              <span>Akses Kredensial Langsung</span>
-            </div>
-            <div class="flex items-center justify-between text-slate-400 pt-0.5">
-              <span>Admin / Core:</span>
-              <code class="text-amber-300 bg-amber-950/40 px-1 py-0.5 rounded border border-amber-800/50">admin@lapinidx.id</code>
-            </div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Member VIP:</span>
-              <code class="text-emerald-300 bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-800/50">user@lapinidx.id</code>
+      <div class="rounded-xl border border-[#2a2e3d] bg-[#1a1d26] shadow-2xl overflow-hidden p-6 sm:p-7">
+        <!-- Standard Email & Password Form -->
+        <form id="form-standard" onsubmit="handleStandardLogin(event)" class="space-y-4 font-mono text-xs">
+          <div class="space-y-1.5">
+            <label class="text-[11px] text-slate-300 font-semibold tracking-wide flex items-center justify-between">
+              <span>USER IDENTIFIER (EMAIL)</span>
+              <span class="text-cyan-400 text-[10px]">REQUIRED</span>
+            </label>
+            <div class="relative">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+              <input
+                type="email"
+                id="login-email"
+                placeholder="nama@email.com"
+                required
+                class="w-full pl-9 pr-3 py-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d] focus:border-cyan-400 focus:outline-none text-white text-xs font-mono transition placeholder:text-slate-600"
+              />
             </div>
           </div>
-        </div>
+
+          <div class="space-y-1.5">
+            <label class="text-[11px] text-slate-300 font-semibold tracking-wide flex items-center justify-between">
+              <span>ACCESS KEY (PASSWORD)</span>
+              <span class="text-slate-500 text-[10px]">ENCRYPTED</span>
+            </label>
+            <div class="relative">
+              <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+              <input
+                type="password"
+                id="login-password"
+                placeholder="••••••••••••"
+                required
+                class="w-full pl-9 pr-3 py-2.5 rounded-lg bg-[#12151c] border border-[#2a2e3d] focus:border-cyan-400 focus:outline-none text-white text-xs font-mono transition placeholder:text-slate-600"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            id="btn-login"
+            class="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold font-mono text-xs transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/30 active:scale-[0.99] mt-2"
+          >
+            <i data-lucide="log-in" class="w-3.5 h-3.5 text-slate-950"></i>
+            <span>LOGIN KE TERMINAL</span>
+          </button>
+        </form>
       </div>
     </main>
 
@@ -266,18 +189,21 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- 2. MAIN WORKSPACE / DASHBOARD VIEW (FULL-WIDTH TERMINAL)          -->
+  <!-- 2. MAIN WORKSPACE / DASHBOARD VIEW (ADAPTIVE SIDEBAR & TERMINAL)  -->
   <!-- ================================================================= -->
-  <div id="dashboard-view" class="hidden min-h-screen flex flex-col bg-[#161920]">
+  <div id="dashboard-view" class="hidden min-h-screen flex flex-row bg-[#161920] relative overflow-x-hidden">
     
-    <!-- MAIN CONTENT WORKSPACE -->
-    <main class="flex-1 flex flex-col min-w-0 bg-[#161920]">
+    <!-- MOBILE BACKDROP OVERLAY -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-black/75 backdrop-blur-xs z-40 md:hidden transition-opacity"></div>
+
+    <!-- ADAPTIVE SIDEBAR (COLLAPSIBLE & EXPANDABLE) -->
+    <aside id="main-sidebar" class="fixed md:static inset-y-0 left-0 w-72 md:w-64 lg:w-72 bg-[#1a1d26] border-r border-[#2a2e3d] flex flex-col justify-between shrink-0 select-none z-50 md:z-30 shadow-2xl md:shadow-none">
       
-      <!-- TOP WORKSPACE BAR & MASTER NAVIGATION HEADER -->
-      <header class="px-4 sm:px-6 py-2.5 border-b border-[#2a2e3d] bg-[#1a1d26] flex flex-wrap items-center justify-between gap-3 sticky top-0 z-20 shadow-md">
-        <!-- Brand & Workspace Tabs -->
-        <div class="flex items-center gap-3 sm:gap-5 flex-wrap">
-          <!-- Terminal Branding -->
+      <!-- TOP SECTION: BRAND, ACCOUNT & NAVIGATION -->
+      <div class="p-4 space-y-4 overflow-y-auto">
+        
+        <!-- Brand Header & Collapse Toggle Button -->
+        <div class="flex items-center justify-between pb-3 border-b border-[#2a2e3d]">
           <div class="flex items-center gap-2.5">
             <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500 p-1 flex items-center justify-center shadow-md shadow-purple-950/50 shrink-0">
               <svg viewBox="0 0 100 100" class="w-full h-full fill-white" xmlns="http://www.w3.org/2000/svg">
@@ -295,40 +221,216 @@
             </div>
           </div>
 
-          <!-- Divider -->
-          <div class="h-6 w-px bg-[#2a2e3d] hidden sm:block"></div>
-
-          <!-- Navigation Tabs -->
-          <nav class="flex items-center gap-1.5 font-mono text-xs">
-            <!-- TAB 1: SCREENER -->
-            <button
-              id="nav-tab-screener"
-              onclick="switchSection('screener')"
-              class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold border border-cyan-500/40 text-cyan-300 bg-cyan-500/15 transition text-xs font-mono shadow-sm"
-            >
-              <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-cyan-400"></i>
-              <span id="nav-tab-screener-label">TAB 1: SCREENER SAHAM</span>
-            </button>
-
-            <!-- TAB 2: STOCKPICK & JOURNAL -->
-            <button
-              id="nav-tab-stockpick"
-              onclick="switchSection('stockpick')"
-              class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#232836] transition text-xs font-mono"
-            >
-              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
-              <span>TAB 2: STOCKPICK &amp; JURNAL</span>
-            </button>
-          </nav>
+          <!-- Minimize button on top of sidebar -->
+          <button
+            onclick="toggleSidebar(false)"
+            class="p-1.5 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] text-slate-400 hover:text-cyan-400 transition"
+            title="Minimize Sidebar"
+          >
+            <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+          </button>
         </div>
 
-        <!-- Toolbar: Feed, Search, Sync, Account Info & Exit -->
+        <!-- ACCOUNT INFO CARD -->
+        <div class="p-3 rounded-xl bg-[#12151c] border border-[#2a2e3d] space-y-2 shadow-inner">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono font-bold text-slate-400 tracking-wider">AKUN TRADER</span>
+            <span id="role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-mono font-extrabold uppercase border bg-emerald-500/10 border-emerald-500/40 text-emerald-400">
+              MEMBER VIP
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-300 font-mono font-bold text-xs shrink-0">
+              VIP
+            </div>
+            <div class="min-w-0 flex-1">
+              <div id="user-email-label" class="font-mono text-xs text-white font-bold truncate">
+                user@email.com
+              </div>
+              <div id="exp-info" class="text-[10px] font-mono text-emerald-400">
+                EXP: 08 Okt 2026
+              </div>
+            </div>
+          </div>
+          <div class="pt-1.5 flex items-center justify-between border-t border-[#2a2e3d]/60 text-[11px] font-mono">
+            <span class="text-slate-500 text-[10px]">FEED: LIVE BEI</span>
+            <button
+              onclick="handleLogout()"
+              class="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 transition"
+            >
+              <i data-lucide="log-out" class="w-3 h-3"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SIDEBAR NAVIGATION ACCORDION / MENU -->
+        <div class="space-y-1.5 font-mono text-xs">
+          
+          <!-- ITEM 1: RINGKASAN PASAR (IHSG) [DEFAULT/HOME] -->
+          <button
+            id="nav-tab-overview"
+            onclick="selectSidebarOverview()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-bold border border-cyan-500/40 text-cyan-300 bg-cyan-500/15 transition text-left text-xs font-mono shadow-sm"
+          >
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i>
+              <span>RINGKASAN PASAR (IHSG)</span>
+            </div>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono">HOME</span>
+          </button>
+
+          <!-- ITEM 2: SCREENER SAHAM (DROPDOWN) -->
+          <div class="space-y-1">
+            <button
+              id="nav-dropdown-screener-btn"
+              onclick="toggleScreenerDropdown()"
+              class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-bold border border-transparent text-slate-300 hover:text-white hover:bg-[#232836] transition text-left text-xs font-mono group"
+            >
+              <div class="flex items-center gap-2.5">
+                <i data-lucide="filter" class="w-4 h-4 text-cyan-400"></i>
+                <span>SCREENER SAHAM</span>
+              </div>
+              <i id="screener-chevron" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition-transform duration-200"></i>
+            </button>
+
+            <!-- DROPDOWN SUBMENU ITEMS (SCALPING, SWING, DLL) -->
+            <div id="screener-submenu" class="pl-2 pr-1 py-1 space-y-1 font-mono text-xs">
+              <button
+                id="sub-screener-SCALPING"
+                onclick="selectSidebarScreener('SCALPING')"
+                class="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition text-left text-[11px]"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-amber-400 font-bold">⚡</span>
+                  <span class="font-bold">Scalping (+1.5%)</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300">SPIKE</span>
+              </button>
+
+              <button
+                id="sub-screener-SWING"
+                onclick="selectSidebarScreener('SWING')"
+                class="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition text-left text-[11px]"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">📈</span>
+                  <span class="font-bold">Swing Trade</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-300">TREND</span>
+              </button>
+
+              <button
+                id="sub-screener-GOLDEN_CROSS"
+                onclick="selectSidebarScreener('GOLDEN_CROSS')"
+                class="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition text-left text-[11px]"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-cyan-400 font-bold">✨</span>
+                  <span class="font-bold">Golden Cross / MACD</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-800 text-cyan-300">REVERSAL</span>
+              </button>
+
+              <button
+                id="sub-screener-OVERSOLD"
+                onclick="selectSidebarScreener('OVERSOLD')"
+                class="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition text-left text-[11px]"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-indigo-400 font-bold">🛡️</span>
+                  <span class="font-bold">Oversold Rebound</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-800 text-indigo-300">RSI &lt; 45</span>
+              </button>
+
+              <button
+                id="sub-screener-DIVIDEND"
+                onclick="selectSidebarScreener('DIVIDEND')"
+                class="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition text-left text-[11px]"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-yellow-400 font-bold">💰</span>
+                  <span class="font-bold">Big Accum / Dividend</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-yellow-950/80 border border-yellow-800 text-yellow-300">BLUECHIP</span>
+              </button>
+
+              <button
+                id="sub-screener-ALL"
+                onclick="selectSidebarScreener('ALL')"
+                class="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition text-left text-[11px]"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 font-bold">📋</span>
+                  <span class="font-bold">Semua Emiten (All)</span>
+                </div>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#12151c] border border-[#2a2e3d] text-slate-400">220+</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ITEM 3: STOCKPICK & JURNAL -->
+          <button
+            id="nav-tab-stockpick"
+            onclick="selectSidebarStockpick()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-bold border border-transparent text-slate-300 hover:text-white hover:bg-[#232836] transition text-left text-xs font-mono group"
+          >
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+              <span>STOCKPICK &amp; JURNAL</span>
+            </div>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300 font-mono">IDE</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- BOTTOM SECTION: COLLAPSE BUTTON -->
+      <div class="p-3 border-t border-[#2a2e3d] bg-[#12151c]/60">
+        <button
+          onclick="toggleSidebar(false)"
+          class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-[#2a2e3d] hover:border-cyan-500/40 text-slate-400 hover:text-cyan-300 bg-[#161920] hover:bg-[#232836] transition font-mono text-xs font-bold"
+        >
+          <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+          <span>MINIMIZE SIDEBAR</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT WORKSPACE (EXPANDS ON MINIMIZE) -->
+    <main id="main-content" class="flex-1 flex flex-col min-w-0 bg-[#161920] transition-all duration-300">
+      
+      <!-- TOP WORKSPACE BAR & NAVIGATION HEADER -->
+      <header class="px-4 sm:px-6 py-2.5 border-b border-[#2a2e3d] bg-[#1a1d26] flex flex-wrap items-center justify-between gap-3 sticky top-0 z-20 shadow-md">
+        <!-- Sidebar Toggle & Active Section Title -->
+        <div class="flex items-center gap-3">
+          <button
+            id="btn-toggle-sidebar"
+            onclick="toggleSidebar()"
+            class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#12151c] hover:bg-[#232836] border border-[#2a2e3d] hover:border-cyan-500/50 text-slate-200 hover:text-cyan-300 transition text-xs font-mono font-bold shadow-sm"
+            title="Buka / Minimize Sidebar"
+          >
+            <i id="sidebar-toggle-icon" data-lucide="panel-left" class="w-4 h-4 text-cyan-400"></i>
+            <span id="sidebar-toggle-text" class="hidden sm:inline">SIDEBAR</span>
+          </button>
+
+          <div class="h-5 w-px bg-[#2a2e3d]"></div>
+
+          <div class="flex items-center gap-2">
+            <span id="current-view-title" class="font-mono text-xs font-bold text-white tracking-wide">
+              RINGKASAN PASAR (IHSG)
+            </span>
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          </div>
+        </div>
+
+        <!-- Toolbar: Feed, Search, Sync -->
         <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto font-mono text-xs">
           <!-- Live Feed Indicator -->
           <div id="feed-status-badge" class="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono bg-emerald-950/70 border border-emerald-800/80 text-emerald-300 flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-online"></span>
-            <span class="hidden md:inline">FEED LIVE BEI AKTIF</span>
-            <span class="md:hidden">LIVE</span>
+            <span class="hidden sm:inline">BURSA LIVE BEI</span>
+            <span class="sm:hidden">LIVE</span>
           </div>
 
           <!-- Quick Search Bar -->
@@ -347,37 +449,11 @@
             <span class="text-slate-500 hidden sm:inline">SYNC:</span>
             <span id="last-update-time" class="text-cyan-300 font-bold">Baru Saja</span>
             <button
-              onclick="fetchScreener(currentFilter)"
+              onclick="fetchScreener(currentFilter); renderIHSGOverview(true);"
               title="Refresh Data Pasar"
               class="ml-1 p-0.5 hover:text-cyan-400 transition"
             >
               <i id="icon-refresh" data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-
-          <!-- Account Badge & Logout -->
-          <div class="flex items-center gap-2 pl-2 border-l border-[#2a2e3d]">
-            <div class="hidden lg:flex flex-col items-end text-right">
-              <div class="flex items-center gap-1.5">
-                <span id="role-badge" class="px-1.5 py-0.2 rounded text-[9px] font-mono font-extrabold uppercase border bg-emerald-500/10 border-emerald-500/40 text-emerald-400">
-                  MEMBER VIP
-                </span>
-                <span id="user-email-label" class="font-mono text-[11px] text-white font-bold truncate max-w-[130px]">
-                  user@email.com
-                </span>
-              </div>
-              <span id="exp-info" class="text-[9px] font-mono text-emerald-400">
-                EXP: 08 Okt 2026
-              </span>
-            </div>
-            
-            <button
-              onclick="handleLogout()"
-              title="Keluar / Logout"
-              class="px-2 py-1 rounded-md bg-[#232836] hover:bg-rose-950/80 hover:text-rose-400 border border-[#2a2e3d] hover:border-rose-800 text-slate-300 transition flex items-center gap-1 text-[11px] font-mono font-bold"
-            >
-              <i data-lucide="log-out" class="w-3.5 h-3.5 text-rose-400"></i>
-              <span class="hidden sm:inline">EXIT</span>
             </button>
           </div>
         </div>
@@ -387,9 +463,254 @@
       <div class="p-4 sm:p-6 lg:p-8 space-y-6">
 
         <!-- ============================================================= -->
+        <!-- SECTION 0: RINGKASAN PASAR (IHSG, TOP 10, FOREIGN FLOW)      -->
+        <!-- [DEFAULT VIEW KETIKA BELUM KLIK APAPUN DARI SIDEBAR]           -->
+        <!-- ============================================================= -->
+        <section id="section-overview" class="space-y-6">
+          
+          <!-- MARKET PULSE & SCHEDULE HEADER BANNER -->
+          <div class="p-4 sm:p-5 rounded-2xl border border-[#2a2e3d] bg-gradient-to-r from-[#181d28] via-[#1a1d26] to-[#141822] shadow-xl flex flex-wrap items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950/80 border border-cyan-800 text-cyan-300 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                  INDEX COMPOSITE (^JKSE)
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950/80 border border-emerald-800 text-emerald-300">
+                  REAL BURSA DATA
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-950/80 border border-purple-800 text-purple-300">
+                  UPDATE: 09:00 | 12:00 | 16:00 WIB
+                </span>
+              </div>
+              <h2 class="text-lg sm:text-xl font-mono font-extrabold text-white tracking-wide flex items-center gap-2">
+                BURSA EFEK INDONESIA &bull; IHSG &amp; MARKET PULSE
+              </h2>
+              <p id="ihsg-slot-badge" class="text-xs font-mono text-slate-400">
+                Snapshot Penutupan Pasar (16:00 WIB) &bull; Sinkronisasi Otomatis
+              </p>
+            </div>
+
+            <!-- Quick Refresh & Info -->
+            <div class="flex items-center gap-3 font-mono text-xs">
+              <div class="text-right hidden sm:block">
+                <div class="text-[10px] text-slate-500 uppercase">JADWAL BERIKUTNYA</div>
+                <div id="ihsg-next-schedule" class="text-cyan-300 font-bold text-[11px]">Jam 09:00 WIB</div>
+              </div>
+              <button
+                onclick="renderIHSGOverview(true)"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 hover:border-cyan-500 text-cyan-300 text-xs font-mono font-bold transition shadow-sm"
+              >
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>SYNC PASAR</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- IHSG TELEMETRY & INTERACTIVE DAILY CHART CARD -->
+          <div class="rounded-2xl border border-[#2a2e3d] bg-[#1a1d26] shadow-xl overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-[#2a2e3d] flex flex-wrap items-center justify-between gap-4 bg-[#141822]/80">
+              
+              <!-- IHSG Live Stats -->
+              <div class="flex items-center gap-4 sm:gap-6 flex-wrap">
+                <div>
+                  <div class="text-[10px] font-mono text-slate-400 tracking-wider">IHSG INDEX VALUE</div>
+                  <div id="ihsg-price" class="text-2xl sm:text-3xl font-mono font-black text-white">
+                    6.671,42
+                  </div>
+                </div>
+                <div>
+                  <div class="text-[10px] font-mono text-slate-400 tracking-wider">CHANGE / HARIAN</div>
+                  <div id="ihsg-change" class="text-base sm:text-lg font-mono font-bold text-rose-400 flex items-center gap-1">
+                    -76,95 (-1,14%)
+                  </div>
+                </div>
+                <div class="hidden md:block">
+                  <div class="text-[10px] font-mono text-slate-400 tracking-wider">DAY RANGE (LOW - HIGH)</div>
+                  <div id="ihsg-range" class="text-xs font-mono text-slate-300 font-bold mt-1">
+                    6.661,20 &mdash; 6.713,50
+                  </div>
+                </div>
+                <div class="hidden lg:block">
+                  <div class="text-[10px] font-mono text-slate-400 tracking-wider">STATUS TREN TEKNIKAL</div>
+                  <div id="ihsg-trend-badge" class="mt-1 flex items-center gap-1.5 text-xs font-mono text-amber-400 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span>Konsolidasi Support / Uji MA50</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chart Mode & Timeframe Selector Toolbar -->
+              <div class="flex items-center gap-2 flex-wrap font-mono text-xs">
+                <!-- Mode: Candlestick vs Line -->
+                <div class="flex items-center rounded-lg bg-[#12151c] border border-[#2a2e3d] p-0.5">
+                  <button
+                    id="btn-ihsg-mode-candle"
+                    onclick="setIHSGChartMode('candlestick')"
+                    class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-cyan-600 text-slate-950 shadow-sm transition"
+                  >
+                    Candle
+                  </button>
+                  <button
+                    id="btn-ihsg-mode-line"
+                    onclick="setIHSGChartMode('line')"
+                    class="px-2.5 py-1 rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition"
+                  >
+                    Line
+                  </button>
+                </div>
+
+                <!-- Timeframe Selector -->
+                <div class="flex items-center rounded-lg bg-[#12151c] border border-[#2a2e3d] p-0.5">
+                  <button onclick="setIHSGTimeframe('1M')" data-ihsg-tf="1M" class="btn-ihsg-tf px-2 py-1 rounded text-[11px] font-bold text-slate-400 hover:text-white transition">1M</button>
+                  <button onclick="setIHSGTimeframe('3M')" data-ihsg-tf="3M" class="btn-ihsg-tf active px-2 py-1 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 transition">3M</button>
+                  <button onclick="setIHSGTimeframe('6M')" data-ihsg-tf="6M" class="btn-ihsg-tf px-2 py-1 rounded text-[11px] font-bold text-slate-400 hover:text-white transition">6M</button>
+                  <button onclick="setIHSGTimeframe('1Y')" data-ihsg-tf="1Y" class="btn-ihsg-tf px-2 py-1 rounded text-[11px] font-bold text-slate-400 hover:text-white transition">1Y</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart Hover Bar -->
+            <div class="px-4 py-2 bg-[#12151c] border-b border-[#2a2e3d] flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
+              <div id="ihsg-ohlc-info" class="flex items-center gap-3 sm:gap-5 flex-wrap">
+                <span>TIMEFRAME: <strong class="text-cyan-300">DAILY</strong></span>
+                <span>OPEN: <strong id="ihsg-o" class="text-slate-200">-</strong></span>
+                <span>HIGH: <strong id="ihsg-h" class="text-emerald-400">-</strong></span>
+                <span>LOW: <strong id="ihsg-l" class="text-rose-400">-</strong></span>
+                <span>CLOSE: <strong id="ihsg-c" class="text-cyan-300">-</strong></span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#f59e0b]"></span> MA20</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#06b6d4]"></span> MA50</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#a855f7]"></span> MA200</span>
+              </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="p-4 space-y-3 bg-[#161920]">
+              <div class="h-72 sm:h-80 w-full relative">
+                <canvas id="chart-canvas-ihsg-price"></canvas>
+              </div>
+              <div class="h-28 w-full border-t border-[#2a2e3d]/80 pt-2 relative">
+                <canvas id="chart-canvas-ihsg-sub"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- THREE-COLUMN TELEMETRY GRID: TOP 10 GAINERS | TOP 10 VOLUME | FOREIGN FLOW -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- CARD 1: TOP 10 GAINERS -->
+            <div class="rounded-2xl border border-[#2a2e3d] bg-[#1a1d26] shadow-xl overflow-hidden flex flex-col justify-between">
+              <div class="p-3.5 sm:p-4 border-b border-[#2a2e3d] bg-[#141822] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-950/80 border border-emerald-800 flex items-center justify-center text-emerald-400">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-mono font-bold text-white text-xs tracking-wide">TOP 10 GAINERS</h3>
+                    <p class="text-[10px] font-mono text-slate-400">Kenaikan persentase tertinggi sesi ini</p>
+                  </div>
+                </div>
+                <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-bold">
+                  BULLISH
+                </span>
+              </div>
+
+              <div id="top-gainers-list" class="p-3 space-y-1.5 flex-1 overflow-y-auto max-h-96">
+                <!-- Dynamically populated -->
+                <div class="text-center py-8 text-xs font-mono text-slate-500">Memuat data top gainers...</div>
+              </div>
+            </div>
+
+            <!-- CARD 2: TOP 10 VOLUME & LIKUIDITAS -->
+            <div class="rounded-2xl border border-[#2a2e3d] bg-[#1a1d26] shadow-xl overflow-hidden flex flex-col justify-between">
+              <div class="p-3.5 sm:p-4 border-b border-[#2a2e3d] bg-[#141822] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-lg bg-cyan-950/80 border border-cyan-800 flex items-center justify-center text-cyan-400">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-mono font-bold text-white text-xs tracking-wide">TOP 10 VOLUME</h3>
+                    <p class="text-[10px] font-mono text-slate-400">Paling likuid &amp; transaksi terbesar</p>
+                  </div>
+                </div>
+                <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">
+                  ACTIVE
+                </span>
+              </div>
+
+              <div id="top-volume-list" class="p-3 space-y-1.5 flex-1 overflow-y-auto max-h-96">
+                <!-- Dynamically populated -->
+                <div class="text-center py-8 text-xs font-mono text-slate-500">Memuat data volume...</div>
+              </div>
+            </div>
+
+            <!-- CARD 3: FOREIGN FLOW (ARUS DANA ASING) -->
+            <div class="rounded-2xl border border-[#2a2e3d] bg-[#1a1d26] shadow-xl overflow-hidden flex flex-col justify-between">
+              <div class="p-3.5 sm:p-4 border-b border-[#2a2e3d] bg-[#141822] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-lg bg-purple-950/80 border border-purple-800 flex items-center justify-center text-purple-400">
+                    <i data-lucide="globe" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-mono font-bold text-white text-xs tracking-wide">FOREIGN FLOW (ASING)</h3>
+                    <p class="text-[10px] font-mono text-slate-400">Estimasi Arus Dana Investor Asing</p>
+                  </div>
+                </div>
+                <span id="foreign-flow-status" class="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-950 border border-purple-800 text-purple-300 font-bold">
+                  NET INFLOW
+                </span>
+              </div>
+
+              <div class="p-3.5 space-y-3 flex-1 overflow-y-auto max-h-96">
+                <!-- Total Net Flow Box -->
+                <div class="p-3 rounded-xl bg-[#12151c] border border-[#2a2e3d] space-y-1.5">
+                  <div class="flex items-center justify-between text-xs font-mono">
+                    <span class="text-slate-400">TOTAL NET ASING:</span>
+                    <span id="foreign-flow-total" class="font-bold text-emerald-400 text-sm">+Rp 382,4 Miliar</span>
+                  </div>
+                  <!-- Ratio Bar -->
+                  <div class="w-full bg-[#232836] h-2 rounded-full overflow-hidden flex">
+                    <div id="foreign-ratio-buy" class="bg-emerald-500 h-full" style="width: 58%;"></div>
+                    <div id="foreign-ratio-sell" class="bg-rose-500 h-full" style="width: 42%;"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                    <span class="text-emerald-400">Foreign Buy: 58%</span>
+                    <span class="text-rose-400">Foreign Sell: 42%</span>
+                  </div>
+                </div>
+
+                <!-- Top 5 Foreign Buy (Akumulasi) -->
+                <div class="space-y-1">
+                  <div class="text-[11px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                    <span>TOP 5 NET FOREIGN BUY</span>
+                  </div>
+                  <div id="foreign-top-buy-list" class="space-y-1 font-mono text-xs">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <!-- Top 5 Foreign Sell (Distribusi) -->
+                <div class="space-y-1 pt-1 border-t border-[#2a2e3d]/60">
+                  <div class="text-[11px] font-mono font-bold text-rose-400 flex items-center gap-1">
+                    <i data-lucide="arrow-down-right" class="w-3.5 h-3.5"></i>
+                    <span>TOP 5 NET FOREIGN SELL</span>
+                  </div>
+                  <div id="foreign-top-sell-list" class="space-y-1 font-mono text-xs">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
         <!-- SECTION 1: SCREENER WORKSPACE                                 -->
         <!-- ============================================================= -->
-        <section id="section-screener" class="space-y-4">
+        <section id="section-screener" class="hidden space-y-4">
           
           <!-- Filter Bar Header -->
           <div class="p-4 rounded-xl border border-[#2a2e3d] bg-[#1a1d26] flex flex-wrap items-center justify-between gap-3 shadow-md">
@@ -619,6 +940,37 @@
               <span class="px-2.5 py-1 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 text-[11px] font-bold">
                 AKSES VIP AKTIF
               </span>
+            </div>
+          </div>
+
+          <!-- GOOGLE SHEETS SYNC STATUS BAR -->
+          <div class="rounded-xl border border-emerald-800/40 bg-[#12151c] p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-2.5 font-mono text-xs shadow-md">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 shrink-0">
+                <i data-lucide="sheet" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-white text-xs">GOOGLE SHEETS: "Trade_Ideas"</span>
+                  <span id="sheets-sync-badge" class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 text-[10px] font-bold">
+                    DATABASE SYNC
+                  </span>
+                </div>
+                <p class="text-[10px] text-slate-400 truncate max-w-xs sm:max-w-md">
+                  Spreadsheet ID: 1uVVRVlZBFQAMPmMMvw4BcXPE3TbEHUERRqzkC7QY4x0
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                id="btn-sync-stockpicks-sheet"
+                onclick="syncStockpicksWithGoogleSheets()"
+                class="px-3 py-1.5 rounded-lg bg-[#1a1d26] hover:bg-[#232836] border border-[#2a2e3d] text-emerald-300 font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95"
+              >
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>SINKRONKAN SHEET</span>
+              </button>
             </div>
           </div>
 
@@ -1409,8 +1761,96 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- APPLICATION JAVASCRIPT LOGIC (100% PRESERVED IN /app.js)          -->
+  <!-- 8. MODAL: KONFIRMASI SIMPAN KE GOOGLE SHEETS (Trade_Ideas)        -->
   <!-- ================================================================= -->
+  <div id="modal-confirm-sheets-save" class="hidden fixed inset-0 z-[75] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
+    <div class="max-w-lg w-full my-auto rounded-xl border border-emerald-500/40 bg-[#1a1d26] shadow-2xl overflow-hidden font-mono text-xs">
+      <div class="px-4 py-3 border-b border-[#2a2e3d] bg-[#12151c] flex items-center justify-between">
+        <div class="flex items-center gap-2 text-emerald-400 font-bold">
+          <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
+          <span>KONFIRMASI SIMPAN KE GOOGLE SHEETS</span>
+        </div>
+        <button onclick="closeConfirmSheetsModal()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a1d26] transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-5 space-y-4">
+        <div class="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/50 space-y-1.5 font-sans">
+          <div class="flex items-center gap-1.5 text-emerald-400 font-bold font-mono text-xs">
+            <i data-lucide="sheet" class="w-3.5 h-3.5"></i>
+            <span>TARGET DATABASE: SPREADSHEET TAB "Trade_Ideas"</span>
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            Data stockpick berikut akan disimpan secara permanen ke spreadsheet database Anda:
+          </p>
+          <div class="p-1.5 rounded bg-[#12151c] border border-[#2a2e3d] text-[10px] text-slate-400 font-mono break-all">
+            Spreadsheet ID: 1uVVRVlZBFQAMPmMMvw4BcXPE3TbEHUERRqzkC7QY4x0
+          </div>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="p-3.5 rounded-lg bg-[#12151c] border border-[#2a2e3d] space-y-2.5 font-mono">
+          <div class="flex items-center justify-between border-b border-[#2a2e3d] pb-2">
+            <span id="confirm-sp-ticker" class="px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold text-sm">BBCA</span>
+            <span class="text-[10px] text-emerald-400 font-bold">STATUS: ACTIVE</span>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400">JUDUL SETUP:</div>
+            <div id="confirm-sp-title" class="text-white font-bold font-sans text-xs">Breakout Resistance</div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+            <div class="p-1.5 rounded bg-[#1a1d26] border border-[#2a2e3d]">
+              <div class="text-[9px] text-slate-400">ENTRY</div>
+              <div id="confirm-sp-entry" class="text-white font-bold">Rp 0</div>
+            </div>
+            <div class="p-1.5 rounded bg-emerald-950/40 border border-emerald-800/50">
+              <div class="text-[9px] text-emerald-400">TARGET (TP)</div>
+              <div id="confirm-sp-tp" class="text-emerald-300 font-bold">Rp 0</div>
+            </div>
+            <div class="p-1.5 rounded bg-rose-950/40 border border-rose-800/50">
+              <div class="text-[9px] text-rose-400">STOP LOSS (SL)</div>
+              <div id="confirm-sp-sl" class="text-rose-300 font-bold">Rp 0</div>
+            </div>
+          </div>
+          <div class="text-[10px] text-slate-400 space-y-1 pt-1 font-sans">
+            <div><span class="font-bold text-cyan-400 font-mono">TA:</span> <span id="confirm-sp-ta" class="text-slate-300">-</span></div>
+            <div><span class="font-bold text-amber-400 font-mono">Bandar:</span> <span id="confirm-sp-bandar" class="text-slate-300">-</span></div>
+          </div>
+        </div>
+
+        <div id="save-sheet-loading" class="hidden p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/60 text-cyan-300 text-[11px] flex items-center gap-2">
+          <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-cyan-400"></i>
+          <span>Menghubungi Google Sheets API &amp; mencatat baris baru ke "Trade_Ideas"...</span>
+        </div>
+
+        <!-- Dialog Action Buttons -->
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-[#2a2e3d]">
+          <button
+            type="button"
+            onclick="closeConfirmSheetsModal()"
+            class="px-4 py-2 rounded-lg bg-[#12151c] border border-[#2a2e3d] hover:bg-[#232836] text-slate-300 font-bold font-mono text-xs transition"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            id="btn-confirm-save-sheet"
+            onclick="proceedSaveStockpickToSheet()"
+            class="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold font-mono text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-900/30 active:scale-[0.99]"
+          >
+            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+            <span>Konfirmasi &amp; Simpan ke Sheet</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- APPLICATION JAVASCRIPT LOGIC                                      -->
+  <!-- ================================================================= -->
+  <script type="module" src="/src/google-sheets.ts"></script>
   <script src="/app.js"></script>
 </body>
 </html>
