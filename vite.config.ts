@@ -529,7 +529,7 @@ function marketDataPlugin(): Plugin {
       });
 
       server.middlewares.use('/api/apps-script', async (req, res) => {
-        const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxp569_Wia0XPhzP81dSCcUte5kaK0nW2yM6GbpXYh5EeYsqwr-SiK_50M_qBeGUK1FfQ/exec';
+        const DEFAULT_API_URL = 'https://lapin-idx-proxy.lkusdewanto.workers.dev';
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

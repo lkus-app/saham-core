@@ -405,8 +405,414 @@ function handleSearch(q) {
 window.handleSearch = handleSearch;
 
 // ============================================================================
-// 3. MODAL EMITEN & TELEMETRY
+// 3. MODAL EMITEN & TELEMETRY DYNAMIC TRADING PLAN
 // ============================================================================
+
+// Helper fraksi tick BEI resmi
+function getIdxTick(price) {
+  if (price >= 5000) return 25;
+  if (price >= 2000) return 10;
+  if (price >= 500) return 5;
+  if (price >= 200) return 2;
+  return 1;
+}
+
+function roundToIdxTick(price) {
+  const tick = getIdxTick(price);
+  return Math.max(50, Math.round(price / tick) * tick);
+}
+window.getIdxTick = getIdxTick;
+window.roundToIdxTick = roundToIdxTick;
+
+// Rumus Kuantitatif Trading Plan Lengkap & Akurat Sesuai Karakteristik Tiap Emiten
+function calculateDynamicTradingPlan(stock) {
+  const ticker = (stock.ticker || 'IDX').toUpperCase();
+  const closePrice = Math.max(50, Number(stock.close || stock.price || 1000));
+  const dailyChange = Number(stock.change_pct ?? stock.changePercent ?? stock.change ?? 0);
+  const rsi = Number(stock.rsi_14 ?? stock.rsi ?? stock.rsi14 ?? 50);
+  const turnover = Number(stock.value_idr || stock.turnover || stock.value || (Number(stock.volume || 0) * closePrice) || 0);
+
+  // Estimasi atau pembacaan high/low intraday
+  const estRange = Math.max(0.015, (Math.abs(dailyChange) / 100) * 1.3);
+  const highPrice = stock.high ? Number(stock.high) : Math.round(closePrice * (1 + estRange * 0.7));
+  const lowPrice = stock.low ? Number(stock.low) : Math.round(closePrice * (1 - estRange * 0.7));
+
+  // 1. Pivots Classic Floor
+  const pp = roundToIdxTick((highPrice + lowPrice + closePrice) / 3);
+  let r1 = roundToIdxTick((2 * pp) - lowPrice);
+  let s1 = roundToIdxTick((2 * pp) - highPrice);
+  let r2 = roundToIdxTick(pp + (highPrice - lowPrice));
+  let s2 = roundToIdxTick(pp - (highPrice - lowPrice));
+
+  if (r1 <= closePrice) r1 = roundToIdxTick(closePrice + (getIdxTick(closePrice) * 4));
+  if (s1 >= closePrice) s1 = roundToIdxTick(closePrice - (getIdxTick(closePrice) * 4));
+  if (r2 <= r1) r2 = roundToIdxTick(r1 + (getIdxTick(r1) * 6));
+  if (s2 >= s1) s2 = roundToIdxTick(s1 - (getIdxTick(s1) * 6));
+
+  // Support level dari data emiten atau S1
+  const rawSupport = Number(stock.support_lvl || stock.support || stock.supportLvl || 0);
+  const supportLevel = (rawSupport > 0 && rawSupport < closePrice) ? rawSupport : s1;
+
+  // 2. Moving Averages
+  const ma20 = Number(stock.ma20 || roundToIdxTick(closePrice * 0.985));
+  const ma50 = Number(stock.ma50 || roundToIdxTick(closePrice * 0.965));
+  const ma200 = Number(stock.ma200 || roundToIdxTick(closePrice * 0.925));
+
+  // 3. Dynamic Entry Zone
+  let entryLow;
+  if (supportLevel > 0 && supportLevel < closePrice && (closePrice - supportLevel) / closePrice <= 0.05) {
+    entryLow = roundToIdxTick(supportLevel);
+  } else if (ma20 > 0 && ma20 < closePrice && (closePrice - ma20) / closePrice <= 0.04) {
+    entryLow = roundToIdxTick(ma20);
+  } else {
+    entryLow = roundToIdxTick(Math.max(s1, closePrice * 0.975));
+  }
+  if (entryLow >= closePrice) {
+    entryLow = roundToIdxTick(closePrice - (getIdxTick(closePrice) * 2));
+  }
+  const entryHigh = closePrice;
+
+  // 4. Dynamic Target Profit (TP1 & TP2)
+  let tp1;
+  if (closePrice < ma50 && ma50 > closePrice * 1.025) {
+    tp1 = roundToIdxTick(ma50);
+  } else if (r1 > closePrice * 1.025) {
+    tp1 = roundToIdxTick(r1);
+  } else {
+    tp1 = roundToIdxTick(closePrice * (1 + Math.max(0.045, (100 - rsi) * 0.0018)));
+  }
+
+  let tp2;
+  if (r2 > tp1 * 1.03) {
+    tp2 = roundToIdxTick(r2);
+  } else {
+    tp2 = roundToIdxTick(tp1 * 1.07);
+  }
+
+  const tp1Pct = Number((((tp1 - closePrice) / closePrice) * 100).toFixed(1));
+  const tp2Pct = Number((((tp2 - closePrice) / closePrice) * 100).toFixed(1));
+
+  // 5. Dynamic Stop Loss (SL)
+  let sl;
+  if (supportLevel > 0 && supportLevel < entryLow) {
+    sl = roundToIdxTick(supportLevel - (getIdxTick(supportLevel) * 2));
+  } else if (s1 < entryLow) {
+    sl = roundToIdxTick(s1);
+  } else {
+    sl = roundToIdxTick(entryLow * 0.965);
+  }
+  // Batas resiko aman (2.0% - 6.5%)
+  if ((closePrice - sl) / closePrice > 0.065) {
+    sl = roundToIdxTick(closePrice * 0.94);
+  } else if ((closePrice - sl) / closePrice < 0.02) {
+    sl = roundToIdxTick(closePrice * 0.975);
+  }
+  const slPct = Number((((sl - closePrice) / closePrice) * 100).toFixed(1));
+
+  // 6. Risk to Reward Ratio
+  const risk = Math.max(1, closePrice - sl);
+  const reward = Math.max(1, tp1 - closePrice);
+  const rrRatio = (reward / risk).toFixed(1);
+
+  // 7. 5-Factor Quant Score Matrix (Dihitung Matematis per Emiten)
+  // A. Trend & MA (0 - 25)
+  let factorTrend = 12;
+  if (closePrice >= ma20 && ma20 >= ma50 && ma50 >= ma200) {
+    factorTrend = 25; // Super Strong Stage 2
+  } else if (closePrice >= ma20 && closePrice >= ma50) {
+    factorTrend = 21; // Bullish Alignment
+  } else if (closePrice >= ma20) {
+    factorTrend = 17; // Short Term Bullish
+  } else if (closePrice >= ma50) {
+    factorTrend = 13; // Base Consolidation
+  } else {
+    factorTrend = 8;  // Bearish / Under Pressure
+  }
+
+  // B. RSI Momentum (0 - 25)
+  let factorMomentum = 15;
+  if (rsi >= 50 && rsi <= 65) {
+    factorMomentum = 24; // Sweet Spot Akumulasi
+  } else if (rsi > 65 && rsi <= 72) {
+    factorMomentum = 20; // High Momentum
+  } else if (rsi >= 40 && rsi < 50) {
+    factorMomentum = 18; // Pullback Support
+  } else if (rsi < 40) {
+    factorMomentum = dailyChange >= 0 ? 22 : 12; // Rebound Oversold vs Falling Knife
+  } else {
+    factorMomentum = 10; // Overbought > 72
+  }
+
+  // C. Support Proximity (0 - 25)
+  const distToSupportPct = ((closePrice - entryLow) / closePrice) * 100;
+  let factorSupport = 12;
+  if (distToSupportPct <= 1.5) {
+    factorSupport = 25; // Tepat di area support/entry
+  } else if (distToSupportPct <= 3.0) {
+    factorSupport = 21; // Sangat dekat support
+  } else if (distToSupportPct <= 5.0) {
+    factorSupport = 15; // Jarak moderat
+  } else {
+    factorSupport = 9;  // Jauh dari support dasar
+  }
+
+  // D. Volume Flow & Liquidity (0 - 15)
+  let factorVolume = 6;
+  if (turnover >= 25000000000) {
+    factorVolume = 15; // Institusi Liquid > 25 Miliar
+  } else if (turnover >= 8000000000) {
+    factorVolume = 12; // Liquid 8 - 25 Miliar
+  } else if (turnover >= 1500000000) {
+    factorVolume = 9;  // Medium 1.5 - 8 Miliar
+  } else {
+    factorVolume = 5;  // Low Turnover < 1.5 Miliar
+  }
+
+  // E. Risk to Reward Score (0 - 10)
+  let factorRR = 5;
+  const numRR = Number(rrRatio);
+  if (numRR >= 2.5) {
+    factorRR = 10;
+  } else if (numRR >= 2.0) {
+    factorRR = 8;
+  } else if (numRR >= 1.5) {
+    factorRR = 6;
+  } else {
+    factorRR = 4;
+  }
+
+  const score = Math.min(98, Math.max(35, factorTrend + factorMomentum + factorSupport + factorVolume + factorRR));
+
+  // Strategi & Bias Dinamis
+  let strategy = "Buy on Support (Swing)";
+  if (rsi < 38 && dailyChange >= 0) {
+    strategy = "Oversold Technical Rebound";
+  } else if (closePrice > ma20 && ma20 > ma50 && dailyChange >= 2.0) {
+    strategy = "Breakout High Momentum";
+  } else if (closePrice >= ma20 && distToSupportPct <= 2.5) {
+    strategy = "Buy on Weakness (Pullback Swing)";
+  } else if (closePrice >= ma200 && closePrice >= ma20) {
+    strategy = "Trend Following (Golden Run)";
+  } else if (closePrice < ma20) {
+    strategy = "Reversal Speculative Play";
+  }
+
+  let biasText = "Bullish Expansion";
+  let biasColor = "text-emerald-400";
+  if (score >= 80) {
+    biasText = "Bullish Expansion";
+    biasColor = "text-emerald-400";
+  } else if (score >= 65) {
+    biasText = "Bullish Consolidation";
+    biasColor = "text-cyan-400";
+  } else if (score >= 50) {
+    biasText = "Neutral / Base Building";
+    biasColor = "text-amber-400";
+  } else {
+    biasText = "Correction Phase / High Risk";
+    biasColor = "text-rose-400";
+  }
+
+  let statusBadge = "READY TO BUY";
+  let statusBadgeClass = "bg-emerald-950 border border-emerald-800 text-emerald-300";
+  if (score >= 80) {
+    statusBadge = "READY TO BUY";
+    statusBadgeClass = "bg-emerald-950 border border-emerald-800 text-emerald-300";
+  } else if (score >= 65) {
+    statusBadge = "ACCUMULATE / WATCH";
+    statusBadgeClass = "bg-cyan-950 border border-cyan-800 text-cyan-300";
+  } else {
+    statusBadge = "WAIT FOR RETEST";
+    statusBadgeClass = "bg-amber-950 border border-amber-800 text-amber-300";
+  }
+
+  let scoreBadge = "HIGH PROBABILITY";
+  let scoreBadgeClass = "bg-emerald-950 text-emerald-300 border border-emerald-800";
+  if (score >= 80) {
+    scoreBadge = "HIGH PROBABILITY";
+    scoreBadgeClass = "bg-emerald-950 text-emerald-300 border border-emerald-800";
+  } else if (score >= 65) {
+    scoreBadge = "MODERATE SETUP";
+    scoreBadgeClass = "bg-cyan-950 text-cyan-300 border border-cyan-800";
+  } else {
+    scoreBadge = "SPECULATIVE PLAY";
+    scoreBadgeClass = "bg-amber-950 text-amber-300 border border-amber-800";
+  }
+
+  const tacticalText = `Harga ${ticker} (Rp ${closePrice.toLocaleString('id-ID')}) memiliki struktur teknikal ${strategy.toLowerCase()}. Disiplin akumulasi bertahap di zona beli Rp ${entryLow.toLocaleString('id-ID')} - ${entryHigh.toLocaleString('id-ID')} dengan proteksi Stop Loss di level Rp ${sl.toLocaleString('id-ID')}.`;
+  const tacticalSub = `Kondisi RSI di ${rsi.toFixed(1)} dan R/R 1 : ${rrRatio}. Potensi reward menuju target ekspansi TP1 Rp ${tp1.toLocaleString('id-ID')} (+${tp1Pct.toFixed(1)}%) dan TP2 Rp ${tp2.toLocaleString('id-ID')} (+${tp2Pct.toFixed(1)}%).`;
+
+  let warnTitle = "Konfirmasi Indikator & Resiko Terukur";
+  let warnDesc = `Setup ${ticker} valid selama bertahan di atas level invalidasi Rp ${sl.toLocaleString('id-ID')}. Turnover likuiditas saat ini tercatat Rp ${(turnover / 1000000000).toFixed(1)} Miliar.`;
+  let warnColor = "text-emerald-400";
+  let warnBoxClass = "bg-emerald-950/20 border-emerald-900/50";
+  if (rsi > 70) {
+    warnTitle = "Peringatan RSI Jenuh Beli (Overbought)";
+    warnDesc = `RSI ${rsi.toFixed(1)} mendekati area jenuh beli. Disarankan entry bertahap saat retest area support Rp ${entryLow.toLocaleString('id-ID')}.`;
+    warnColor = "text-amber-400";
+    warnBoxClass = "bg-amber-950/20 border-amber-900/50";
+  } else if (score < 60) {
+    warnTitle = "Perhatian: Volatilitas & Resiko Lebih Tinggi";
+    warnDesc = `Harga sedang dalam fase konsolidasi atau downtrend. Gunakan size lot bijak dan patuhi batas Stop Loss ketat di Rp ${sl.toLocaleString('id-ID')}.`;
+    warnColor = "text-rose-400";
+    warnBoxClass = "bg-rose-950/20 border-rose-900/50";
+  }
+
+  return {
+    ticker,
+    closePrice,
+    dailyChange,
+    pp, r1, r2, s1, s2,
+    supportLevel,
+    ma20, ma50, ma200,
+    entryLow, entryHigh,
+    tp1, tp1Pct,
+    tp2, tp2Pct,
+    sl, slPct,
+    risk, reward, rrRatio,
+    factorTrend, factorMomentum, factorSupport, factorVolume, factorRR,
+    score,
+    strategy,
+    biasText, biasColor,
+    statusBadge, statusBadgeClass,
+    scoreBadge, scoreBadgeClass,
+    tacticalText, tacticalSub,
+    warnTitle, warnDesc, warnColor, warnBoxClass
+  };
+}
+window.calculateDynamicTradingPlan = calculateDynamicTradingPlan;
+
+// Perbarui Tampilan Tab Analisa / Trading Plan On-Demand
+function updateTradingPlanView(stock) {
+  if (!stock) return;
+  const plan = calculateDynamicTradingPlan(stock);
+  window.currentTradingPlan = plan;
+
+  // Pivots & Levels
+  const elPp = document.getElementById('m-pp');
+  const elR1 = document.getElementById('m-r1');
+  const elR2 = document.getElementById('m-r2');
+  const elS1 = document.getElementById('m-s1');
+  const elS2 = document.getElementById('m-s2');
+
+  if (elPp) elPp.textContent = `Rp ${plan.pp.toLocaleString('id-ID')}`;
+  if (elR1) elR1.textContent = `Rp ${plan.r1.toLocaleString('id-ID')}`;
+  if (elR2) elR2.textContent = `Rp ${plan.r2.toLocaleString('id-ID')}`;
+  if (elS1) elS1.textContent = `Rp ${plan.s1.toLocaleString('id-ID')}`;
+  if (elS2) elS2.textContent = `Rp ${plan.s2.toLocaleString('id-ID')}`;
+
+  // Score Banner
+  const scoreEl = document.getElementById('m-plan-score');
+  if (scoreEl) scoreEl.textContent = `${plan.score}%`;
+
+  const scoreBadgeEl = document.getElementById('m-plan-score-badge');
+  if (scoreBadgeEl) {
+    scoreBadgeEl.textContent = plan.scoreBadge;
+    scoreBadgeEl.className = `px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold inline-block mb-1 ${plan.scoreBadgeClass}`;
+  }
+
+  const stratEl = document.getElementById('m-plan-strategy');
+  if (stratEl) stratEl.textContent = plan.strategy;
+
+  const biasEl = document.getElementById('m-plan-bias');
+  if (biasEl) {
+    biasEl.textContent = plan.biasText;
+    biasEl.className = `${plan.biasColor} font-mono`;
+  }
+
+  const statusBadgeEl = document.getElementById('m-plan-status-badge');
+  if (statusBadgeEl) {
+    statusBadgeEl.textContent = plan.statusBadge;
+    statusBadgeEl.className = `px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-extrabold inline-block ${plan.statusBadgeClass}`;
+  }
+
+  // 5-Factor Confluence Breakdown
+  const fTrend = document.getElementById('m-factor-trend');
+  const fMom = document.getElementById('m-factor-momentum');
+  const fSup = document.getElementById('m-factor-support');
+  const fVol = document.getElementById('m-factor-volume');
+  const fRr = document.getElementById('m-factor-rr');
+
+  if (fTrend) fTrend.textContent = `${plan.factorTrend} / 25`;
+  if (fMom) fMom.textContent = `${plan.factorMomentum} / 25`;
+  if (fSup) fSup.textContent = `${plan.factorSupport} / 25`;
+  if (fVol) fVol.textContent = `${plan.factorVolume} / 15`;
+  if (fRr) fRr.textContent = `${plan.factorRR} / 10`;
+
+  // Rekomendasi Taktis
+  const tactText = document.getElementById('m-plan-tactical-text');
+  if (tactText) tactText.textContent = plan.tacticalText;
+
+  const tactSub = document.getElementById('m-plan-tactical-sub');
+  if (tactSub) tactSub.textContent = plan.tacticalSub;
+
+  // 4-Column Execution Matrix
+  const planEntry = document.getElementById('m-plan-entry');
+  const planTp1 = document.getElementById('m-plan-tp1');
+  const planTp1Pct = document.getElementById('m-plan-tp1-pct');
+  const planTp2 = document.getElementById('m-plan-tp2');
+  const planTp2Pct = document.getElementById('m-plan-tp2-pct');
+  const planSl = document.getElementById('m-plan-sl');
+  const planSlPct = document.getElementById('m-plan-sl-pct');
+
+  if (planEntry) planEntry.textContent = `${plan.entryLow.toLocaleString('id-ID')} - ${plan.entryHigh.toLocaleString('id-ID')}`;
+  if (planTp1) planTp1.textContent = `Rp ${plan.tp1.toLocaleString('id-ID')}`;
+  if (planTp1Pct) planTp1Pct.textContent = `+${plan.tp1Pct.toFixed(1)}%`;
+  if (planTp2) planTp2.textContent = `Rp ${plan.tp2.toLocaleString('id-ID')}`;
+  if (planTp2Pct) planTp2Pct.textContent = `+${plan.tp2Pct.toFixed(1)}%`;
+  if (planSl) planSl.textContent = `Rp ${plan.sl.toLocaleString('id-ID')}`;
+  if (planSlPct) planSlPct.textContent = `${plan.slPct.toFixed(1)}%`;
+
+  // Risk/Reward Summary
+  const elRr = document.getElementById('m-plan-rr');
+  if (elRr) elRr.textContent = `R/R = 1 : ${plan.rrRatio}`;
+
+  const riskVal = document.getElementById('m-plan-risk-val');
+  const rewardVal = document.getElementById('m-plan-reward-val');
+  if (riskVal) riskVal.textContent = `${plan.slPct.toFixed(1)}% (Rp ${plan.risk.toLocaleString('id-ID')})`;
+  if (rewardVal) rewardVal.textContent = `+${plan.tp1Pct.toFixed(1)}% s/d +${plan.tp2Pct.toFixed(1)}% (+Rp ${plan.reward.toLocaleString('id-ID')})`;
+
+  // Visual Slider Spectrum
+  const slVal = document.getElementById('m-slider-val-sl');
+  const enVal = document.getElementById('m-slider-val-entry');
+  const tp1Val = document.getElementById('m-slider-val-tp1');
+  const tp2Val = document.getElementById('m-slider-val-tp2');
+
+  if (slVal) slVal.textContent = plan.sl.toLocaleString('id-ID');
+  if (enVal) enVal.textContent = plan.entryLow.toLocaleString('id-ID');
+  if (tp1Val) tp1Val.textContent = plan.tp1.toLocaleString('id-ID');
+  if (tp2Val) tp2Val.textContent = plan.tp2.toLocaleString('id-ID');
+
+  const diffEl = document.getElementById('m-plan-slider-diff');
+  if (diffEl) {
+    diffEl.textContent = `Posisi: Rp ${plan.closePrice.toLocaleString('id-ID')} | Jarak ke TP1: +${plan.tp1Pct.toFixed(1)}%`;
+  }
+
+  const marker = document.getElementById('m-slider-marker');
+  if (marker) {
+    const rangeSpan = Math.max(1, plan.tp2 - plan.sl);
+    const posPct = Math.min(92, Math.max(8, ((plan.closePrice - plan.sl) / rangeSpan) * 100));
+    marker.style.left = `${posPct.toFixed(1)}%`;
+  }
+
+  const markerLabel = document.getElementById('m-slider-marker-label');
+  if (markerLabel) {
+    markerLabel.textContent = `Rp ${plan.closePrice.toLocaleString('id-ID')}`;
+  }
+
+  // Warning Telemetry Box
+  const warnBox = document.getElementById('m-plan-warning-box');
+  const warnIcon = document.getElementById('m-plan-warning-icon');
+  const warnTitleEl = document.getElementById('m-plan-warning-title');
+  const warnDescEl = document.getElementById('m-plan-warning-desc');
+
+  if (warnBox) warnBox.className = `rounded-xl border p-3 sm:p-3.5 flex items-start gap-2.5 sm:gap-3 ${plan.warnBoxClass}`;
+  if (warnIcon) warnIcon.className = `w-4 h-4 mt-0.5 shrink-0 ${plan.warnColor}`;
+  if (warnTitleEl) warnTitleEl.textContent = plan.warnTitle;
+  if (warnDescEl) warnDescEl.textContent = plan.warnDesc;
+}
+window.updateTradingPlanView = updateTradingPlanView;
+
 function openStockModal(ticker) {
   const rawStock = allStocks.find(s => s.ticker === ticker);
   if (!rawStock) return;
@@ -441,107 +847,12 @@ function openStockModal(ticker) {
   const volVal = Number(currentSelectedStock.value_idr || (currentSelectedStock.volume * closePrice) || currentSelectedStock.volume || 0);
   if (mVol) mVol.textContent = volVal >= 1000000000 ? `${(volVal / 1000000000).toFixed(1)} M` : `${(volVal / 1000000).toFixed(1)} JT`;
 
-  // Pivots & Levels
-  const pp = closePrice;
-  const r1 = Math.round(closePrice * 1.025);
-  const r2 = Math.round(closePrice * 1.055);
-  const s1 = Math.round(closePrice * 0.975);
-  const s2 = Math.round(closePrice * 0.945);
-
-  const elPp = document.getElementById('m-pp');
-  const elR1 = document.getElementById('m-r1');
-  const elR2 = document.getElementById('m-r2');
-  const elS1 = document.getElementById('m-s1');
-  const elS2 = document.getElementById('m-s2');
-
-  if (elPp) elPp.textContent = `Rp ${pp.toLocaleString('id-ID')}`;
-  if (elR1) elR1.textContent = `Rp ${r1.toLocaleString('id-ID')}`;
-  if (elR2) elR2.textContent = `Rp ${r2.toLocaleString('id-ID')}`;
-  if (elS1) elS1.textContent = `Rp ${s1.toLocaleString('id-ID')}`;
-  if (elS2) elS2.textContent = `Rp ${s2.toLocaleString('id-ID')}`;
-
-  // Quant Confluence & Strategic Execution Matrix
-  const entryLow = Math.round(closePrice * 0.99);
-  const tp1 = Math.round(closePrice * 1.07);
-  const tp2 = Math.round(closePrice * 1.15);
-  const sl = Math.round(closePrice * 0.96);
-
-  const planEntry = document.getElementById('m-plan-entry');
-  const planTp1 = document.getElementById('m-plan-tp1');
-  const planTp2 = document.getElementById('m-plan-tp2');
-  const planSl = document.getElementById('m-plan-sl');
-
-  if (planEntry) planEntry.textContent = `${entryLow.toLocaleString('id-ID')} - ${closePrice.toLocaleString('id-ID')}`;
-  if (planTp1) planTp1.textContent = `Rp ${tp1.toLocaleString('id-ID')}`;
-  if (planTp2) planTp2.textContent = `Rp ${tp2.toLocaleString('id-ID')}`;
-  if (planSl) planSl.textContent = `Rp ${sl.toLocaleString('id-ID')}`;
-
-  const slVal = document.getElementById('m-slider-val-sl');
-  const enVal = document.getElementById('m-slider-val-entry');
-  const tp1Val = document.getElementById('m-slider-val-tp1');
-  const tp2Val = document.getElementById('m-slider-val-tp2');
-
-  if (slVal) slVal.textContent = sl.toLocaleString('id-ID');
-  if (enVal) enVal.textContent = entryLow.toLocaleString('id-ID');
-  if (tp1Val) tp1Val.textContent = tp1.toLocaleString('id-ID');
-  if (tp2Val) tp2Val.textContent = tp2.toLocaleString('id-ID');
-
-  // Slider marker positioning
-  const marker = document.getElementById('m-slider-marker');
-  if (marker) {
-    marker.style.left = '38%';
-  }
-
-  // 5-Factor Quant Score calculation
-  const rsi = Number(currentSelectedStock.rsi_14 || 50);
-  let factorTrend = dailyChange >= 0 ? 22 : 14;
-  let factorMomentum = rsi >= 45 && rsi <= 68 ? 23 : 15;
-  let factorSupport = 24;
-  let factorVolume = 12;
-  let factorRR = 9;
-
-  const score = Math.min(96, Math.max(62, factorTrend + factorMomentum + factorSupport + factorVolume + factorRR));
-  
-  const scoreEl = document.getElementById('m-plan-score');
-  if (scoreEl) scoreEl.textContent = `${score}%`;
-
-  const fTrend = document.getElementById('m-factor-trend');
-  const fMom = document.getElementById('m-factor-momentum');
-  const fSup = document.getElementById('m-factor-support');
-  const fVol = document.getElementById('m-factor-volume');
-  const fRr = document.getElementById('m-factor-rr');
-
-  if (fTrend) fTrend.textContent = `${factorTrend} / 25`;
-  if (fMom) fMom.textContent = `${factorMomentum} / 25`;
-  if (fSup) fSup.textContent = `${factorSupport} / 25`;
-  if (fVol) fVol.textContent = `${factorVolume} / 15`;
-  if (fRr) fRr.textContent = `${factorRR} / 10`;
-
-  const tactText = document.getElementById('m-plan-tactical-text');
-  if (tactText) {
-    tactText.textContent = `Harga ${currentSelectedStock.ticker} berada pada zona akumulasi ideal. Pertahankan disiplin entry bertahap di kisaran Rp ${entryLow.toLocaleString('id-ID')} - ${closePrice.toLocaleString('id-ID')}, dengan proteksi Stop Loss ketat di level Rp ${sl.toLocaleString('id-ID')}.`;
-  }
-
-  const tactSub = document.getElementById('m-plan-tactical-sub');
-  if (tactSub) {
-    tactSub.textContent = `Setup valid selama harga bertahan di atas MA50 harian. Potensi reward menuju target ekspansi TP1 Rp ${tp1.toLocaleString('id-ID')} (+7.0%).`;
-  }
-
-  const riskVal = document.getElementById('m-plan-risk-val');
-  const rewardVal = document.getElementById('m-plan-reward-val');
-  if (riskVal) riskVal.textContent = `-4.0% (Rp ${(closePrice - sl).toLocaleString('id-ID')})`;
-  if (rewardVal) rewardVal.textContent = `+7.0% s/d +15.0%`;
-
   // Tampilkan Modal
   const modal = document.getElementById('modal-stock');
   if (modal) modal.classList.remove('hidden');
-  switchModalTab('analisa');
 
-  // Pre-fetch data chart dan berita di background agar saat klik TAB 2 & TAB 3 langsung tampil instan
-  if (currentSelectedStock && currentSelectedStock.ticker) {
-    fetchMarketChartData(currentSelectedStock.ticker, currentChartTf).catch(() => {});
-    fetchIdxNews(currentSelectedStock.ticker).catch(() => {});
-  }
+  // Buka Tab Analisa Emiten (Trading Plan) & kalkulasi hanya saat tab ini aktif
+  switchModalTab('analisa');
 }
 window.openStockModal = openStockModal;
 
@@ -550,6 +861,7 @@ function closeStockModal() {
   if (modal) modal.classList.add('hidden');
   currentSelectedStock = null;
   window.currentSelectedStockData = null;
+  window.currentTradingPlan = null;
 }
 window.closeStockModal = closeStockModal;
 
@@ -568,18 +880,25 @@ function switchModalTab(tabKey) {
     activeBtn.className = "modal-tab-btn active flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 font-mono font-bold border-b-2 border-cyan-400 text-cyan-300 bg-cyan-500/5 transition text-xs whitespace-nowrap rounded-t-md shrink-0";
   }
 
-  if (tabKey === 'chart' && currentSelectedStock) {
+  if (!currentSelectedStock) return;
+
+  // Penarikan & update data HANYA dilakukan saat tab masing-masing di klik
+  if (tabKey === 'analisa') {
+    updateTradingPlanView(currentSelectedStock);
+  } else if (tabKey === 'chart') {
     setTimeout(() => {
       renderAllCharts(currentSelectedStock, currentChartTf);
     }, 60);
-  } else if (tabKey === 'news' && currentSelectedStock) {
+  } else if (tabKey === 'news') {
     fetchIdxNews(currentSelectedStock.ticker);
   }
+
+  if (window.lucide) window.lucide.createIcons();
 }
 window.switchModalTab = switchModalTab;
 
 // ============================================================================
-// 4. CHART ENGINE (LIVE BEI MARKET DATA & UNIQUE EMITEN CHARTS)
+// 4. CHART ENGINE (JADWAL UPDATE: 09:00, 12:00, 16:00 WIB & DATA HARGA SAHAM)
 // ============================================================================
 const chartDataCache = {};
 let activeChartData = null;
@@ -587,25 +906,68 @@ let activeChartData = null;
 function showChartLoading(show) {
   const overlay = document.getElementById('chart-loading-overlay');
   if (!overlay) return;
-  if (show) {
-    overlay.classList.remove('hidden');
-    requestAnimationFrame(() => overlay.classList.remove('opacity-0'));
-  } else {
-    overlay.classList.add('opacity-0');
-    setTimeout(() => overlay.classList.add('hidden'), 200);
-  }
+  overlay.classList.add('hidden');
 }
 
-// Generator data unik deterministik per emiten (jika offline / emiten baru IPO)
-function generateTickerFallbackData(stock, tf) {
+// Resolver Snapshot Jadwal Pasar BEI (09:00, 12:00, 16:00 WIB)
+function getScheduledChartSnapshot() {
+  const now = new Date();
+  // Konversi ke Waktu Indonesia Barat (WIB = UTC+7)
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const wibTime = new Date(utcMs + (7 * 3600000));
+
+  const hours = wibTime.getHours();
+  const minutes = wibTime.getMinutes();
+  const timeNum = hours * 100 + minutes;
+
+  const yyyy = wibTime.getFullYear();
+  const mm = String(wibTime.getMonth() + 1).padStart(2, '0');
+  const dd = String(wibTime.getDate()).padStart(2, '0');
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+
+  let slotId = "";
+  let slotLabel = "";
+  let nextSchedule = "";
+
+  if (timeNum < 900) {
+    slotId = `${dateStr}_1600_prev`;
+    slotLabel = "Snapshot Penutupan Kemarin (16:00 WIB)";
+    nextSchedule = "Pembaruan berikutnya: Jam 09:00 WIB";
+  } else if (timeNum < 1200) {
+    slotId = `${dateStr}_0900`;
+    slotLabel = "Snapshot Sesi 1 Buka (09:00 WIB)";
+    nextSchedule = "Pembaruan berikutnya: Jam 12:00 WIB";
+  } else if (timeNum < 1600) {
+    slotId = `${dateStr}_1200`;
+    slotLabel = "Snapshot Sesi 1 Istirahat (12:00 WIB)";
+    nextSchedule = "Pembaruan berikutnya: Jam 16:00 WIB";
+  } else {
+    slotId = `${dateStr}_1600`;
+    slotLabel = "Snapshot Sesi 2 Penutupan (16:00 WIB)";
+    nextSchedule = "Pembaruan berikutnya: Besok Jam 09:00 WIB";
+  }
+
+  return {
+    slotId,
+    slotLabel,
+    nextSchedule,
+    wibTimeStr: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} WIB`
+  };
+}
+window.getScheduledChartSnapshot = getScheduledChartSnapshot;
+
+// Generator data grafik harga saham berdasarkan harga emiten & snapshot jadwal (09:00, 12:00, 16:00)
+function generateStockPriceChartData(stock, tf, snapshot) {
   const count = tf === '1M' ? 24 : tf === '6M' ? 120 : tf === '1Y' ? 240 : 65;
-  const closeBase = Number(stock.close || 1000);
+  const closeBase = Number(stock.close || stock.price || 1000);
   const ticker = (stock.ticker || 'IDX').toUpperCase();
+  const snapSlot = snapshot ? snapshot.slotId : 'std';
   
-  // Seed hash unik berdasarkan karakter ticker
+  // Seed deterministik unik per emiten & slot jadwal agar chart konsisten per sesi
   let seed = 0;
-  for (let i = 0; i < ticker.length; i++) {
-    seed = (seed * 37 + ticker.charCodeAt(i)) % 10000;
+  const seedString = `${ticker}_${snapSlot}`;
+  for (let i = 0; i < seedString.length; i++) {
+    seed = (seed * 37 + seedString.charCodeAt(i)) % 10000;
   }
   
   function pseudoRandom() {
@@ -613,9 +975,8 @@ function generateTickerFallbackData(stock, tf) {
     return seed / 233280;
   }
 
-  // Karakteristik pasar unik per emiten
-  const volatility = 0.012 + ((seed % 9) * 0.003); // 1.2% - 3.9%
-  const trendSlope = (((seed % 20) - 9.5) * 0.002); // tren naik / datar / turun unik
+  const volatility = 0.01 + ((seed % 7) * 0.0025); // 1.0% - 2.5%
+  const trendSlope = (((seed % 20) - 9.5) * 0.0018);
   const cycleFreq = 0.12 + ((seed % 8) * 0.04);
 
   const labels = [];
@@ -634,7 +995,7 @@ function generateTickerFallbackData(stock, tf) {
   const volumes = [];
   const adLine = [];
 
-  let currentP = closeBase * (1 - (trendSlope * count * 0.45));
+  let currentP = closeBase * (1 - (trendSlope * count * 0.42));
   let runningAd = 0;
 
   for (let i = 0; i < count; i++) {
@@ -644,7 +1005,7 @@ function generateTickerFallbackData(stock, tf) {
     labels.push(label);
 
     const stepRand = (pseudoRandom() - 0.49) * 2;
-    const wave = Math.sin(i * cycleFreq) * (closeBase * volatility * 0.75);
+    const wave = Math.sin(i * cycleFreq) * (closeBase * volatility * 0.7);
     
     if (i === count - 1) {
       currentP = closeBase;
@@ -653,11 +1014,24 @@ function generateTickerFallbackData(stock, tf) {
       currentP = Math.max(50, currentP);
     }
 
-    const openRand = (pseudoRandom() - 0.5) * volatility * currentP;
-    const openP = Math.round(i === count - 1 ? currentP * (1 - (Number(stock.change_pct || 0) / 100)) : currentP + openRand);
-    const closeP = Math.round(currentP);
-    const highP = Math.round(Math.max(openP, closeP) * (1 + (pseudoRandom() * volatility)));
-    const lowP = Math.round(Math.min(openP, closeP) * (1 - (pseudoRandom() * volatility)));
+    let closeP = roundToIdxTick(currentP);
+    let openP;
+    let highP;
+    let lowP;
+
+    if (i === count - 1) {
+      closeP = closeBase;
+      const chgPct = Number(stock.change_pct ?? stock.changePercent ?? stock.change ?? 0);
+      const prevClose = stock.prev_close ? Number(stock.prev_close) : (chgPct !== 0 ? Math.round(closeBase / (1 + chgPct / 100)) : closeBase);
+      openP = roundToIdxTick(prevClose);
+      highP = stock.high ? Number(stock.high) : Math.max(openP, closeP, roundToIdxTick(Math.max(openP, closeP) * (1 + (pseudoRandom() * volatility))));
+      lowP = stock.low ? Number(stock.low) : Math.min(openP, closeP, roundToIdxTick(Math.min(openP, closeP) * (1 - (pseudoRandom() * volatility))));
+    } else {
+      const openRand = (pseudoRandom() - 0.5) * volatility * currentP;
+      openP = roundToIdxTick(currentP + openRand);
+      highP = roundToIdxTick(Math.max(openP, closeP) * (1 + (pseudoRandom() * volatility)));
+      lowP = roundToIdxTick(Math.min(openP, closeP) * (1 - (pseudoRandom() * volatility)));
+    }
 
     prices.push(closeP);
     opens.push(openP);
@@ -665,23 +1039,23 @@ function generateTickerFallbackData(stock, tf) {
     lows.push(lowP);
     ohlc.push({ open: openP, high: highP, low: lowP, close: closeP, date: label });
 
-    const baseV = Number(stock.volume) || 12000000;
-    const v = Math.round(baseV * (0.5 + (pseudoRandom() * 1.1)));
+    const baseV = Number(stock.volume) || 10000000;
+    const v = Math.round(baseV * (0.6 + (pseudoRandom() * 0.9)));
     volumes.push(v);
     runningAd += (closeP >= openP ? 1 : -1) * v;
     adLine.push(runningAd);
   }
 
-  // Kalkulasi MA
+  // Kalkulasi Moving Averages (MA20, MA50, MA200) dari deret harga saham
   for (let i = 0; i < prices.length; i++) {
     const s20 = prices.slice(Math.max(0, i - 19), i + 1);
-    ma20s.push(Math.round(s20.reduce((a, b) => a + b, 0) / s20.length));
+    ma20s.push(roundToIdxTick(s20.reduce((a, b) => a + b, 0) / s20.length));
 
     const s50 = prices.slice(Math.max(0, i - 49), i + 1);
-    ma50s.push(Math.round(s50.reduce((a, b) => a + b, 0) / s50.length));
+    ma50s.push(roundToIdxTick(s50.reduce((a, b) => a + b, 0) / s50.length));
 
     const s200 = prices.slice(Math.max(0, i - 199), i + 1);
-    ma200s.push(Math.round(s200.reduce((a, b) => a + b, 0) / s200.length));
+    ma200s.push(roundToIdxTick(s200.reduce((a, b) => a + b, 0) / s200.length));
 
     if (i < 14) {
       rsis.push(50);
@@ -704,80 +1078,118 @@ function generateTickerFallbackData(stock, tf) {
     macdHists.push(Number((m - s).toFixed(1)));
   }
 
-  return { labels, prices, opens, highs, lows, ohlc, ma20s, ma50s, ma200s, rsis, macds, macdSignals, macdHists, volumes, adLine, isLive: false };
+  return {
+    labels,
+    prices,
+    opens,
+    highs,
+    lows,
+    ohlc,
+    ma20s,
+    ma50s,
+    ma200s,
+    rsis,
+    macds,
+    macdSignals,
+    macdHists,
+    volumes,
+    adLine,
+    isLive: false,
+    snapshot
+  };
 }
+window.generateStockPriceChartData = generateStockPriceChartData;
+window.generateTickerFallbackData = generateStockPriceChartData;
 
-// Pengambil Data Chart Live Pasar BEI (Yahoo Finance via /api/market-chart)
+// Pengambil Data Chart Berbasis Jadwal 09:00, 12:00, 16:00 WIB Menggunakan Data Riil Bursa IDX
 async function fetchMarketChartData(ticker, tf) {
-  const rangeMap = { '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y' };
-  const range = rangeMap[tf] || '3mo';
-  const cacheKey = `${ticker}_${range}`;
+  const snapshot = getScheduledChartSnapshot();
+  const cacheKey = `${ticker}_${tf}_${snapshot.slotId}`;
 
   if (chartDataCache[cacheKey]) {
     return chartDataCache[cacheKey];
   }
 
-  showChartLoading(true);
+  // Petakan timeframe ke parameter range endpoint market chart
+  const tfRangeMap = {
+    '1M': '1mo',
+    '3M': '3mo',
+    '6M': '6mo',
+    '1Y': '1y'
+  };
+  const range = tfRangeMap[tf] || '3mo';
+  const cleanTicker = (ticker || '').trim().toUpperCase().replace('.JK', '');
 
   try {
-    const res = await fetch(`/api/market-chart?ticker=${encodeURIComponent(ticker)}&range=${range}&interval=1d`, {
-      signal: AbortSignal.timeout(6000)
-    });
-
-    if (res.ok) {
-      const json = await res.json();
+    const resp = await fetch(`/api/market-chart?ticker=${encodeURIComponent(cleanTicker)}&range=${range}&interval=1d`);
+    if (resp.ok) {
+      const json = await resp.json();
       if (json.success && Array.isArray(json.prices) && json.prices.length > 0) {
-        let runningAd = 0;
-        const adLine = json.prices.map((p, i) => {
-          const prev = i > 0 ? json.prices[i - 1] : p;
-          const vol = json.volumes ? json.volumes[i] || 0 : 0;
-          runningAd += (p >= prev ? 1 : -1) * vol;
-          return runningAd;
+        // Hitung A/D Line (Accumulation/Distribution) dari data OHLCV bursa
+        let currentAD = 0;
+        const adLine = (json.ohlc || []).map((bar, i) => {
+          const high = Number(bar.high || bar.close);
+          const low = Number(bar.low || bar.close);
+          const close = Number(bar.close);
+          const vol = Number((json.volumes && json.volumes[i]) || 0);
+          const rangeHL = high - low;
+          const mfm = rangeHL > 0 ? ((close - low) - (high - close)) / rangeHL : 0;
+          currentAD += mfm * vol;
+          return Math.round(currentAD / 100000);
         });
 
-        const ohlc = (json.ohlc && json.ohlc.length === json.prices.length)
-          ? json.ohlc
-          : json.prices.map((p, i) => ({
-              open: i > 0 ? json.prices[i - 1] : p,
-              high: Math.round(p * 1.01),
-              low: Math.round(p * 0.99),
-              close: p,
-              date: json.labels[i] || `D${i}`
-            }));
-
-        const result = {
-          labels: json.labels,
-          prices: json.prices,
-          opens: ohlc.map(b => b.open),
-          highs: ohlc.map(b => b.high),
-          lows: ohlc.map(b => b.low),
-          ohlc: ohlc,
+        const data = {
+          labels: json.labels || [],
+          prices: json.prices || [],
+          opens: (json.ohlc || []).map(b => b.open),
+          highs: (json.ohlc || []).map(b => b.high),
+          lows: (json.ohlc || []).map(b => b.low),
+          ohlc: json.ohlc || [],
           ma20s: json.ma20 || [],
           ma50s: json.ma50 || [],
           ma200s: json.ma200 || [],
-          volumes: json.volumes || [],
           rsis: json.rsi || [],
           macds: json.macdLine || [],
           macdSignals: json.signalLine || [],
           macdHists: json.macdHist || [],
-          adLine: adLine,
-          isLive: true
+          volumes: json.volumes || [],
+          adLine,
+          isRealData: true,
+          isLive: false,
+          snapshot
         };
 
-        chartDataCache[cacheKey] = result;
-        showChartLoading(false);
-        return result;
+        // Sinkronisasi data real-time harga modal dengan closing harga terakhir dari bursa jika tersedia
+        if (currentSelectedStock && currentSelectedStock.ticker === cleanTicker) {
+          if (json.currentPrice) {
+            currentSelectedStock.close = json.currentPrice;
+            const mClose = document.getElementById('m-close');
+            if (mClose) mClose.textContent = `Rp ${Number(json.currentPrice).toLocaleString('id-ID')}`;
+          }
+          if (json.changePct !== undefined) {
+            currentSelectedStock.change_pct = json.changePct;
+            const mChange = document.getElementById('m-change');
+            if (mChange) {
+              const chgSign = json.changePct > 0 ? '+' : '';
+              mChange.textContent = `${chgSign}${Number(json.changePct).toFixed(2)}%`;
+              mChange.className = `text-sm font-bold ${json.changePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            }
+          }
+        }
+
+        chartDataCache[cacheKey] = data;
+        return data;
       }
     }
   } catch (err) {
-    console.warn(`Gagal mengambil chart live untuk ${ticker}, fallback ke kalkulasi spesifik emiten:`, err);
+    console.warn('Gagal memuat grafik dari bursa, beralih ke fallback harga lokal:', err);
   }
 
-  showChartLoading(false);
-  const stock = allStocks.find(s => s.ticker === ticker) || { ticker, close: 1000 };
-  const fallbackResult = generateTickerFallbackData(stock, tf);
-  chartDataCache[cacheKey] = fallbackResult;
-  return fallbackResult;
+  // Fallback lokal jika terjadi kegagalan jaringan atau offline
+  const stock = allStocks.find(s => s.ticker === ticker) || (currentSelectedStock && currentSelectedStock.ticker === ticker ? currentSelectedStock : { ticker, close: 1000, price: 1000 });
+  const result = generateStockPriceChartData(stock, tf, snapshot);
+  chartDataCache[cacheKey] = result;
+  return result;
 }
 
 // Plugin Khusus Penggambaran Candlestick Pada Chart.js
@@ -836,16 +1248,14 @@ async function renderAllCharts(stock, tf) {
 
   activeChartData = data;
 
-  // Update Status Sumber Data di Modal
+  // Update Status Sumber Data & Jadwal Pembaruan di Modal
   const srcBadge = document.getElementById('m-chart-source');
   if (srcBadge) {
-    if (data.isLive) {
-      srcBadge.textContent = "LIVE BEI (YAHOO FINANCE)";
-      srcBadge.className = "px-2 py-1 rounded bg-[#161920] border border-cyan-500/40 text-cyan-300 text-[10px] font-mono";
-    } else {
-      srcBadge.textContent = "DATA HISTORIS SPESIFIK";
-      srcBadge.className = "px-2 py-1 rounded bg-[#161920] border border-slate-700 text-slate-400 text-[10px] font-mono";
-    }
+    const snap = data.snapshot || getScheduledChartSnapshot();
+    const sourceLabel = data.isRealData ? '<span class="text-emerald-400 font-bold">BURSA IDX (REAL DATA)</span>' : '<span class="text-slate-400">ESTIMASI TEKNIKAL</span>';
+    srcBadge.innerHTML = `<span class="inline-flex items-center gap-1 text-cyan-400 font-bold"><i data-lucide="clock" class="w-3 h-3"></i> JADWAL UPDATE: 09:00 | 12:00 | 16:00 WIB</span> &bull; ${sourceLabel} &bull; <span class="text-slate-300 font-mono">${snap.slotLabel}</span>`;
+    srcBadge.className = "px-2.5 py-1 rounded bg-[#161920] border border-cyan-500/40 text-[10px] font-mono flex items-center gap-1.5 flex-wrap";
+    if (window.lucide) window.lucide.createIcons();
   }
 
   // Update Ribbon Hover Lilin Terakhir
@@ -1404,13 +1814,14 @@ window.fetchIdxNews = fetchIdxNews;
 // ============================================================================
 function openLotCalculatorModal() {
   if (!currentSelectedStock) return;
+  const plan = window.currentTradingPlan || calculateDynamicTradingPlan(currentSelectedStock);
   const calcTicker = document.getElementById('calc-ticker');
   const calcEntry = document.getElementById('calc-entry');
   const calcSl = document.getElementById('calc-sl');
 
-  if (calcTicker) calcTicker.value = currentSelectedStock.ticker;
-  if (calcEntry) calcEntry.value = currentSelectedStock.close;
-  if (calcSl) calcSl.value = Math.round(currentSelectedStock.close * 0.96);
+  if (calcTicker) calcTicker.value = plan.ticker;
+  if (calcEntry) calcEntry.value = plan.closePrice;
+  if (calcSl) calcSl.value = plan.sl;
 
   calculateLotSizing();
   const modal = document.getElementById('modal-lot-calc');
@@ -1461,18 +1872,15 @@ window.calculateLotSizing = calculateLotSizing;
 
 function handleShareTradingPlan() {
   if (!currentSelectedStock) return;
-  const s = currentSelectedStock;
-  const entryLow = Math.round(s.close * 0.99);
-  const tp1 = Math.round(s.close * 1.07);
-  const sl = Math.round(s.close * 0.96);
-  const text = `[LAPIN IDX SETUP]\nEmiten: ${s.ticker}\nArea Entry: Rp ${entryLow.toLocaleString('id-ID')} - ${s.close.toLocaleString('id-ID')}\nTarget (TP1): Rp ${tp1.toLocaleString('id-ID')} (+7.0%)\nStop Loss: Rp ${sl.toLocaleString('id-ID')} (-4.0%)\nConfluence: Quant Confluence Score 85%\n-- Dianalisis via Lapin IDX Terminal`;
+  const plan = window.currentTradingPlan || calculateDynamicTradingPlan(currentSelectedStock);
+  const text = `[LAPIN IDX SETUP]\nEmiten: ${plan.ticker}\nArea Entry: Rp ${plan.entryLow.toLocaleString('id-ID')} - ${plan.entryHigh.toLocaleString('id-ID')}\nTarget 1 (TP1): Rp ${plan.tp1.toLocaleString('id-ID')} (+${plan.tp1Pct.toFixed(1)}%)\nTarget 2 (TP2): Rp ${plan.tp2.toLocaleString('id-ID')} (+${plan.tp2Pct.toFixed(1)}%)\nStop Loss: Rp ${plan.sl.toLocaleString('id-ID')} (${plan.slPct.toFixed(1)}%)\nRisk/Reward: 1 : ${plan.rrRatio}\nScore: ${plan.score}% (${plan.scoreBadge})\nStrategi: ${plan.strategy}\n-- Dianalisis via Lapin IDX Terminal`;
   
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text)
-      .then(() => showToast('Trading plan berhasil disalin ke clipboard!'))
-      .catch(() => showToast('Trading plan disiapkan', 'info'));
+      .then(() => showToast(`Trading plan ${plan.ticker} berhasil disalin ke clipboard!`))
+      .catch(() => showToast(`Trading plan ${plan.ticker} disiapkan`, 'info'));
   } else {
-    showToast('Trading plan disiapkan', 'info');
+    showToast(`Trading plan ${plan.ticker} disiapkan`, 'info');
   }
 }
 window.handleShareTradingPlan = handleShareTradingPlan;
@@ -1490,18 +1898,7 @@ function handleSendToJournal() {
 window.handleSendToJournal = handleSendToJournal;
 
 function toggleSidebar(forceState) {
-  const sidebar = document.getElementById('main-sidebar');
-  const backdrop = document.getElementById('sidebar-backdrop');
-  if (!sidebar || !backdrop) return;
-  const isHidden = sidebar.classList.contains('-translate-x-full');
-  
-  if (forceState === false || !isHidden) {
-    sidebar.classList.add('-translate-x-full');
-    backdrop.classList.add('hidden');
-  } else {
-    sidebar.classList.remove('-translate-x-full');
-    backdrop.classList.remove('hidden');
-  }
+  // Sidebar telah dinonaktifkan sesuai permintaan pengguna
 }
 window.toggleSidebar = toggleSidebar;
 
@@ -1518,14 +1915,12 @@ function switchSection(sec) {
   const navSp = document.getElementById('nav-tab-stockpick');
 
   if (sec === 'screener') {
-    if (navScr) navScr.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-bold border border-cyan-500/30 text-cyan-300 bg-cyan-500/10 transition text-left";
-    if (navSp) navSp.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-bold border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#232836] transition text-left";
+    if (navScr) navScr.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold border border-cyan-500/40 text-cyan-300 bg-cyan-500/15 transition text-xs font-mono shadow-sm";
+    if (navSp) navSp.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#232836] transition text-xs font-mono";
   } else {
-    if (navSp) navSp.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-bold border border-amber-500/30 text-amber-300 bg-amber-500/10 transition text-left";
-    if (navScr) navScr.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-bold border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#232836] transition text-left";
+    if (navSp) navSp.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold border border-amber-500/40 text-amber-300 bg-amber-500/15 transition text-xs font-mono shadow-sm";
+    if (navScr) navScr.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#232836] transition text-xs font-mono";
   }
-
-  toggleSidebar(false);
 }
 window.switchSection = switchSection;
 

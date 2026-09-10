@@ -7,7 +7,7 @@ const STORAGE_KEY_CONFIG = 'idx_google_script_config_v1';
 export const DEFAULT_SHEET_ID = '1uVVRVlZBFQAMPmMMvw4BcXPE3TbEHUERRqzkC7QY4x0';
 export const DEFAULT_SHEET_GID = '2051754762';
 export const USER_PROJECT_ID = '1uQf_jxtD-s4Jt6SQrJnba9lZua8BrCbNuosY0g2aXZare3cn6liv-IvB';
-export const USER_DEPLOYED_URL = 'https://script.google.com/macros/s/AKfycbxp569_Wia0XPhzP81dSCcUte5kaK0nW2yM6GbpXYh5EeYsqwr-SiK_50M_qBeGUK1FfQ/exec';
+export const USER_DEPLOYED_URL = 'https://lapin-idx-proxy.lkusdewanto.workers.dev';
 
 export const SAMPLE_GOOGLE_SCRIPT_CODE = `/**
  * Google Apps Script - API Sync Database Saham Core IHSG
