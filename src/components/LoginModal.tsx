@@ -62,32 +62,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
       const response = await fetch(targetUrl, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: { 'Accept': 'application/json' }
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
-      }
 
       const res = await response.json();
 
-      // =========================================================================
-      // STRICT CHECK: Tolak jika yang kembali adalah list screener atau bukan user
-      // =========================================================================
-      const isScreenerArray = Array.isArray(res.data) && res.data.length > 0 && res.data[0].ticker;
-      const hasUserData = Boolean(res.user || res.token || res.role);
-
-      if (res && res.success === true && !isScreenerArray && hasUserData) {
-        const userData = res.user || res;
+      // STRICT VALIDATION: Harus memiliki authenticated: true dan objek user terdaftar
+      if (res && res.authenticated === true && res.user && res.user.email) {
         const profile: UserProfile = {
-          email: cleanEmail,
-          name: userData.name || userData.nama || cleanEmail.split('@')[0],
-          role: userData.role || 'VIP Member',
+          email: res.user.email,
+          name: res.user.name || cleanEmail.split('@')[0],
+          role: res.user.role || 'VIP Member',
           isVip: true,
           loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-          token: userData.token || 'TOKEN_ACTIVE',
+          token: res.user.token || 'VALID_TOKEN',
         };
 
         saveUserSession(profile);
@@ -96,13 +84,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         setTimeout(() => {
           onClose();
-        }, 900);
+        }, 800);
       } else {
-        // Blokir total jika tidak lolos validasi database
-        setErrorMessage(res?.message || 'Email atau password salah. Akses ditolak!');
+        // Blokir mutlak jika data tidak cocok di Google Spreadsheet
+        setErrorMessage(res.message || 'Email atau password salah. Akses ditolak!');
       }
     } catch (err: any) {
-      setErrorMessage('Gagal menghubungi server autentikasi: ' + (err.message || String(err)));
+      setErrorMessage('Koneksi gagal: ' + (err.message || String(err)));
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +175,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
             <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-[11px] text-slate-400 flex items-start gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-              <span>Sesi Anda aktif dan tersimpan. Akses penuh Screener 155 emiten, Stockpick VIP, dan analitik kuantitatif telah terbuka.</span>
+              <span>Sesi Anda aktif dan tersimpan. Akses penuh fitur VIP telah terbuka.</span>
             </div>
 
             <div className="flex gap-2 pt-2">
