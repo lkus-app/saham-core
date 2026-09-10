@@ -66,16 +66,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       });
 
       const res = await response.json();
+      console.log('HASIL RESPONSE SERVER:', res);
 
-      // STRICT VALIDATION: Harus memiliki authenticated: true dan objek user terdaftar
-      if (res && res.authenticated === true && res.user && res.user.email) {
+      // =========================================================================
+      // STRICT FILTER:
+      // 1. authenticated WAJIB true
+      // 2. WAJIB punya objek user
+      // 3. TIDAK BOLEH berupa array saham screener
+      // =========================================================================
+      const isRealUser = 
+        res &&
+        res.authenticated === true &&
+        res.user &&
+        typeof res.user.email === 'string' &&
+        !Array.isArray(res.data);
+
+      if (isRealUser) {
         const profile: UserProfile = {
           email: res.user.email,
           name: res.user.name || cleanEmail.split('@')[0],
           role: res.user.role || 'VIP Member',
           isVip: true,
           loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-          token: res.user.token || 'VALID_TOKEN',
+          token: res.user.token || 'TOKEN_ACTIVE',
         };
 
         saveUserSession(profile);
@@ -86,8 +99,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           onClose();
         }, 800);
       } else {
-        // Blokir mutlak jika data tidak cocok di Google Spreadsheet
-        setErrorMessage(res.message || 'Email atau password salah. Akses ditolak!');
+        // MUTLAK TOLAK LOGIN ASAL / SALAH
+        setErrorMessage(res?.message || 'Email atau password salah. Akses ditolak!');
       }
     } catch (err: any) {
       setErrorMessage('Koneksi gagal: ' + (err.message || String(err)));
@@ -116,7 +129,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-                {currentUser ? 'Profil Akun Member' : 'Login Akun & Member VIP'}
+                {currentUser ? 'Profil Akber Member' : 'Login Akun & Member VIP'}
               </h2>
               <p className="text-[11px] text-slate-400">Google Apps Script Auth API</p>
             </div>
