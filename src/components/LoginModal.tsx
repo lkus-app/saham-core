@@ -44,7 +44,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    if (!cleanEmail || !cleanPass) {
       setErrorMessage('Silakan masukkan email dan password.');
       return;
     }
@@ -54,46 +57,49 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setSuccessMessage(null);
 
     try {
-      const targetEndpoint = (webAppUrl && webAppUrl.trim() !== '') ? webAppUrl : DEFAULT_API_URL;
-      const cleanUrl = targetEndpoint.includes('?') 
-        ? `${targetEndpoint}&action=login` 
-        : `${targetEndpoint}?action=login`;
+      const baseUrl = (webAppUrl && webAppUrl.trim() !== '') ? webAppUrl.trim() : DEFAULT_API_URL;
+      const targetUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}action=login&email=${encodeURIComponent(cleanEmail)}&password=${encodeURIComponent(cleanPass)}`;
 
-      const response = await fetch(cleanUrl, {
-        method: 'POST',
+      const response = await fetch(targetUrl, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          action: 'login',
-          email: email.trim().toLowerCase(),
-          password: password.trim(),
-        }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      }
 
       const res = await response.json();
 
-      // STRICT VALIDATION: Hanya izinkan masuk jika database Google Sheets mengonfirmasi
-      if (res && res.success === true) {
+      // =========================================================================
+      // STRICT CHECK: Tolak jika yang kembali adalah list screener atau bukan user
+      // =========================================================================
+      const isScreenerArray = Array.isArray(res.data) && res.data.length > 0 && res.data[0].ticker;
+      const hasUserData = Boolean(res.user || res.token || res.role);
+
+      if (res && res.success === true && !isScreenerArray && hasUserData) {
+        const userData = res.user || res;
         const profile: UserProfile = {
-          email: email.trim().toLowerCase(),
-          name: res.name || res.user?.name || res.user?.nama || email.split('@')[0],
-          role: res.role || res.user?.role || 'VIP Member',
+          email: cleanEmail,
+          name: userData.name || userData.nama || cleanEmail.split('@')[0],
+          role: userData.role || 'VIP Member',
           isVip: true,
           loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-          token: res.token || res.user?.token || undefined,
+          token: userData.token || 'TOKEN_ACTIVE',
         };
 
         saveUserSession(profile);
         onLoginSuccess(profile);
         setSuccessMessage('Login berhasil! Selamat datang di Terminal Saham Core VIP.');
-        
+
         setTimeout(() => {
           onClose();
-        }, 1000);
+        }, 900);
       } else {
-        // Tolak jika password/email salah
-        setErrorMessage(res?.message || 'Email atau password tidak terdaftar di database.');
+        // Blokir total jika tidak lolos validasi database
+        setErrorMessage(res?.message || 'Email atau password salah. Akses ditolak!');
       }
     } catch (err: any) {
       setErrorMessage('Gagal menghubungi server autentikasi: ' + (err.message || String(err)));
@@ -108,7 +114,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setSuccessMessage('Anda telah keluar dari akun.');
     setTimeout(() => {
       onClose();
-    }, 800);
+    }, 600);
   };
 
   return (
