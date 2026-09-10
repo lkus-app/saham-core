@@ -6,14 +6,13 @@ import {
   ViewMode, 
   AppSection, 
   QuantStock, 
-  StockpickItem,
+  StockpickItem, 
   UserProfile 
 } from './types';
 import { DEFAULT_STOCKS } from './data/defaultStocks';
 import { 
   INITIAL_QUANT_STOCKS, 
-  INITIAL_STOCKPICKS, 
-  USER_DEPLOYED_URL 
+  INITIAL_STOCKPICKS 
 } from './data/quantData';
 import { 
   getLocalStocks, 
@@ -55,12 +54,21 @@ import { GoogleScriptModal } from './components/GoogleScriptModal';
 import { DeployGuideModal } from './components/DeployGuideModal';
 import { ValuationCalculatorModal } from './components/ValuationCalculatorModal';
 
-import { CheckCircle2, AlertCircle, Info, Sparkles, Layers, ShieldCheck, RefreshCw } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
+
+// Endpoint Tunggal Cloudflare Worker Proxy
+export const WORKER_API_URL = "https://lapin-idx-proxy.lkusdewanto.workers.dev";
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<AppSection>('screener');
   const [stocks, setStocks] = useState<CoreStock[]>(() => getLocalStocks());
-  const [config, setConfig] = useState<GoogleScriptConfig>(() => getGoogleScriptConfig());
+  const [config, setConfig] = useState<GoogleScriptConfig>(() => {
+    const saved = getGoogleScriptConfig();
+    return {
+      ...saved,
+      webAppUrl: saved.webAppUrl || WORKER_API_URL,
+    };
+  });
   
   // Real-time market data state
   const [liveQuotes, setLiveQuotes] = useState<Record<string, LiveQuote>>(INITIAL_LIVE_QUOTES);
@@ -109,7 +117,7 @@ export default function App() {
     }, 4000);
   };
 
-  // Automatically fetch live market quotes and load screener data from Google Apps Script on launch
+  // Sinkronisasi data awal saat aplikasi dimuat
   useEffect(() => {
     let isMounted = true;
     const loadInitialLiveQuotes = async () => {
@@ -128,16 +136,14 @@ export default function App() {
       }
     };
 
-    // Auto-load 155 stocks from Google Apps Script Web App screener
     const loadInitialScreener = async () => {
       try {
         const res = await loadScreener('ALL');
         if (res.success && res.data && res.data.length > 0 && isMounted) {
           setQuantStocks(res.data);
-          console.log(`[Google Apps Script] Berhasil memuat ${res.data.length} saham screener.`);
         }
       } catch (e) {
-        console.warn('Gagal memuat screener awal dari Apps Script:', e);
+        console.warn('Gagal memuat screener awal dari proxy:', e);
       }
     };
 
@@ -149,7 +155,7 @@ export default function App() {
     };
   }, []);
 
-  // Manual refresh real-time quotes handler
+  // Handler Refresh Manual Quotes
   const handleRefreshLiveQuotes = async () => {
     setIsRefreshingLive(true);
     try {
@@ -167,19 +173,16 @@ export default function App() {
     }
   };
 
-  // Sync stocks to local storage
+  // Simpan saham ke localStorage
   useEffect(() => {
     saveLocalStocks(stocks);
   }, [stocks]);
 
-
-  // Handle saving new stockpick
   const handleAddStockpick = (post: StockpickItem) => {
     setStockpicks((prev) => [post, ...prev]);
     showToast(`Setup ${post.ticker} berhasil dipublish!`);
   };
 
-  // Handle saving fundamental stock
   const handleSaveStock = (stock: CoreStock) => {
     setStocks((prev) => {
       const existsIndex = prev.findIndex((s) => s.id === stock.id || s.ticker === stock.ticker);
@@ -193,7 +196,6 @@ export default function App() {
     showToast(`Saham ${stock.ticker} berhasil disimpan!`);
   };
 
-  // Handle deleting a stock
   const handleDeleteStock = (stockId: string) => {
     const stockToDelete = stocks.find((s) => s.id === stockId);
     if (!stockToDelete) return;
@@ -204,9 +206,8 @@ export default function App() {
     }
   };
 
-  // Sync Pull from Google Apps Script Web App URL
   const handleSyncPull = async () => {
-    const targetUrl = config.webAppUrl || USER_DEPLOYED_URL;
+    const targetUrl = config.webAppUrl || WORKER_API_URL;
     setIsSyncing(true);
     try {
       const fetched = await fetchFromGoogleScript(targetUrl);
@@ -230,7 +231,6 @@ export default function App() {
     }
   };
 
-  // Sync Pull directly from Google Sheet (CSV / Live)
   const handleSyncPullFromSheet = async (sheetId?: string, gid?: string) => {
     const targetId = sheetId || config.sheetId || DEFAULT_SHEET_ID;
     const targetGid = gid || config.sheetGid || DEFAULT_SHEET_GID;
@@ -259,9 +259,8 @@ export default function App() {
     }
   };
 
-  // Sync Push to Google Apps Script
   const handleSyncPush = async () => {
-    const targetUrl = config.webAppUrl || USER_DEPLOYED_URL;
+    const targetUrl = config.webAppUrl || WORKER_API_URL;
     setIsSyncing(true);
     try {
       await pushToGoogleScript(targetUrl, stocks);
@@ -281,11 +280,9 @@ export default function App() {
     }
   };
 
-  // Handle importing stocks directly (e.g. from copy-paste spreadsheet)
   const handleImportStocks = async (newStocks: CoreStock[]) => {
     if (!newStocks || newStocks.length === 0) return;
     
-    // Merge or replace
     const tickersToFetch = newStocks.map((s) => s.ticker);
     let currentQuotes = liveQuotes;
     try {
@@ -293,16 +290,13 @@ export default function App() {
       currentQuotes = { ...liveQuotes, ...freshQuotes };
       setLiveQuotes(currentQuotes);
     } catch {
-      // use current quotes
+      // gunakan quote saat ini
     }
 
     const updated = applyLiveQuotesToStocks(newStocks, currentQuotes);
     setStocks(updated);
     saveLocalStocks(updated);
-
-    // Also update quant stocks if matching ticker exists
     setQuantStocks((prev) => applyLiveQuotesToQuant(prev, currentQuotes));
-
     showToast(`Berhasil mengimpor ${newStocks.length} saham dari spreadsheet dengan harga live!`);
   };
 
@@ -320,7 +314,6 @@ export default function App() {
     showToast('Database berhasil direset dengan harga pasar live.');
   };
 
-  // Filter & sort fundamental stocks
   const filteredStocks = useMemo(() => {
     return stocks
       .filter((stock) => {
@@ -412,7 +405,7 @@ export default function App() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 border border-emerald-500/30 font-mono">
-                  Google Sheet &amp; Script Connected
+                  Proxy &amp; Apps Script Connected
                 </span>
                 <span className="text-xs text-slate-400 font-mono">
                   Sheet: <strong className="text-emerald-400">1uVVRVlZBFQAMPmMMvw4BcXPE3TbEHUERRqzkC7QY4x0</strong> (gid: 2051754762)
@@ -422,7 +415,7 @@ export default function App() {
                 IDX Quant Analyst &amp; Saham Core Terminal
               </h2>
               <p className="text-xs text-slate-400 max-w-2xl mt-0.5">
-                Database terhubung dengan Google Sheet &amp; Google Apps Script. Dilengkapi Screener 6 Strategi, Stockpick VIP Feed, Indikator Teknikal MA/RSI/MACD, serta Kalkulator Nilai Wajar Fundamental.
+                Database terhubung dengan Google Sheet &amp; Cloudflare Worker Proxy. Dilengkapi Screener 6 Strategi, Stockpick VIP Feed, dan Indikator Teknikal Real-time.
               </p>
             </div>
 
@@ -469,13 +462,11 @@ export default function App() {
         {/* SECTION 3: FUNDAMENTAL & FAIR VALUE */}
         {activeSection === 'fundamental' && (
           <div className="space-y-6">
-            {/* Statistical Summary Cards */}
             <StatCards
               stocks={stocks}
               onSelectStock={(st) => setSelectedStock(st)}
             />
 
-            {/* Search, Filters & View Toggle */}
             <FilterBar
               filters={filters}
               onChangeFilter={setFilters}
@@ -484,7 +475,6 @@ export default function App() {
               totalFiltered={filteredStocks.length}
             />
 
-            {/* Dynamic View Mode */}
             {viewMode === 'table' && (
               <StockTable
                 stocks={filteredStocks}
@@ -529,7 +519,7 @@ export default function App() {
       <footer className="border-t border-slate-900 bg-slate-950 py-8 text-center text-xs text-slate-500 font-mono">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-2">
           <p className="text-slate-400 font-medium">
-            IDX Quant Analyst &bull; Saham Core VIP Terminal &bull; Google Apps Script Integration
+            IDX Quant Analyst &bull; Saham Core VIP Terminal &bull; Cloudflare Worker Proxy
           </p>
           <p className="text-[11px] text-slate-600">
             Didesain untuk deploy instan di Vercel (Vite SPA + Tailwind CSS + Chart Engine).
@@ -585,6 +575,7 @@ export default function App() {
         onClose={() => setIsCalculatorModalOpen(false)}
       />
 
+      {/* Login Modal dengan fallback URL ke Worker */}
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
@@ -597,7 +588,7 @@ export default function App() {
           setCurrentUser(null);
           showToast('Anda telah logout.', 'info');
         }}
-        webAppUrl={config.webAppUrl}
+        webAppUrl={config.webAppUrl || WORKER_API_URL}
       />
     </div>
   );
