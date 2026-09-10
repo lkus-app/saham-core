@@ -12,7 +12,7 @@ import {
   Sparkles,
   Server
 } from 'lucide-react';
-import { userLogin, saveUserSession, clearUserSession } from '../services/googleScriptService';
+import { saveUserSession, clearUserSession } from '../services/googleScriptService';
 import { UserProfile } from '../types';
 
 interface LoginModalProps {
@@ -24,6 +24,8 @@ interface LoginModalProps {
   webAppUrl: string;
 }
 
+const DEFAULT_API_URL = "https://lapin-idx-proxy.lkusdewanto.workers.dev";
+
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
   onClose,
@@ -32,7 +34,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onLogout,
   webAppUrl,
 }) => {
-  const [email, setEmail] = useState('lkusdewanto@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -52,28 +54,49 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setSuccessMessage(null);
 
     try {
-      const res = await userLogin(email.trim(), password.trim(), webAppUrl);
+      const targetEndpoint = (webAppUrl && webAppUrl.trim() !== '') ? webAppUrl : DEFAULT_API_URL;
+      const cleanUrl = targetEndpoint.includes('?') 
+        ? `${targetEndpoint}&action=login` 
+        : `${targetEndpoint}?action=login`;
 
-      if (res && res.success) {
+      const response = await fetch(cleanUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'login',
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
+        }),
+      });
+
+      const res = await response.json();
+
+      // STRICT VALIDATION: Hanya izinkan masuk jika database Google Sheets mengonfirmasi
+      if (res && res.success === true) {
         const profile: UserProfile = {
-          email: email.trim(),
-          name: res.user?.name || res.user?.nama || email.split('@')[0],
-          role: res.user?.role || 'VIP Member',
+          email: email.trim().toLowerCase(),
+          name: res.name || res.user?.name || res.user?.nama || email.split('@')[0],
+          role: res.role || res.user?.role || 'VIP Member',
           isVip: true,
           loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-          token: res.user?.token || undefined,
+          token: res.token || res.user?.token || undefined,
         };
+
         saveUserSession(profile);
         onLoginSuccess(profile);
         setSuccessMessage('Login berhasil! Selamat datang di Terminal Saham Core VIP.');
+        
         setTimeout(() => {
           onClose();
-        }, 1200);
+        }, 1000);
       } else {
-        setErrorMessage(res?.message || 'Email atau password tidak sesuai dengan database Google Sheet.');
+        // Tolak jika password/email salah
+        setErrorMessage(res?.message || 'Email atau password tidak terdaftar di database.');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Terjadi kesalahan saat memverifikasi kredensial.');
+      setErrorMessage('Gagal menghubungi server autentikasi: ' + (err.message || String(err)));
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +208,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-[11px] text-slate-400 flex items-start gap-2">
               <Server className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
               <div>
-                <span>Login diverifikasi langsung ke Google Apps Script via fungsi <code className="text-emerald-300 font-bold">userLogin(email, password)</code>.</span>
+                <span>Login diverifikasi langsung ke sheet <code className="text-emerald-300 font-bold">Users</code> Google Spreadsheet.</span>
               </div>
             </div>
 
